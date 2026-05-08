@@ -252,17 +252,7 @@
 
         <!-- Add Transaction Page -->
         <ion-page v-if="currentTab === 'add'">
-          <ion-header class="ion-no-border">
-            <ion-toolbar class="ion-padding-horizontal">
-              <ion-buttons slot="start">
-                <ion-button @click="currentTab = 'home'">
-                  <ion-icon slot="icon-only" :icon="arrowBackOutline"></ion-icon>
-                </ion-button>
-              </ion-buttons>
-              <ion-title>{{ currentFormType === 'DO' ? 'Tambah DO' : 'Tambah Operasional' }}</ion-title>
-            </ion-toolbar>
-          </ion-header>
-          <ion-content class="ion-padding">
+          <ion-content class="ion-padding no-header-form">
             <div class="nested-content">
               <OfflineForm 
                 :type="currentFormType"
@@ -273,7 +263,7 @@
         </ion-page>
 
         <!-- Tab Bar -->
-        <ion-tab-bar slot="bottom" class="custom-tab-bar" v-if="currentTab !== 'add'">
+        <ion-tab-bar slot="bottom" class="custom-tab-bar">
           <ion-tab-button tab="home" @click="currentTab = 'home'" :selected="currentTab === 'home'">
             <ion-icon :icon="gridOutline"></ion-icon>
             <ion-label>Beranda</ion-label>
@@ -421,8 +411,9 @@ const handleLoginSuccess = (authData) => {
     sessionStorage.setItem('token', token);
   }
   
-  loadDashboardData();
-  SyncService.syncAll();
+  SyncService.syncAll().then(() => {
+    loadDashboardData();
+  });
 };
 
 const currentTime = ref(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
@@ -443,13 +434,14 @@ onMounted(async () => {
   await DatabaseService.init();
   await SyncService.init();
   
-  // Triger sync awal saat refresh
+  // Trigger sync awal saat refresh/buka aplikasi
   if (isLoggedIn.value && SyncService.isOnline) {
-    console.log("Triggering auto-sync on refresh...");
-    SyncService.syncAll(); 
+    console.log("Triggering auto-sync on startup...");
+    await SyncService.syncAll(); 
+    await loadDashboardData();
+  } else {
+    await loadDashboardData();
   }
-
-  loadDashboardData();
   
   setInterval(updateTime, 1000);
   setInterval(loadDashboardData, 10000);

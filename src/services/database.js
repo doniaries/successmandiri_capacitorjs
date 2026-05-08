@@ -68,6 +68,13 @@ export const DatabaseService = {
                 telepon TEXT,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS supirs (
+                id INTEGER PRIMARY KEY,
+                nama TEXT NOT NULL,
+                alamat TEXT,
+                telepon TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
         `;
         await db.execute(query);
     },
@@ -86,6 +93,24 @@ export const DatabaseService = {
     async getSellers() {
         await this.init();
         const query = `SELECT * FROM penjuals ORDER BY nama ASC`;
+        const result = await db.query(query);
+        return result.values || [];
+    },
+
+    async saveDrivers(drivers) {
+        if (!drivers || !drivers.length) return;
+        for (const d of drivers) {
+            const query = `
+                INSERT OR REPLACE INTO supirs (id, nama, alamat, telepon, updated_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `;
+            await db.run(query, [d.id, d.nama, d.alamat, d.telepon]);
+        }
+    },
+
+    async getDrivers() {
+        await this.init();
+        const query = `SELECT * FROM supirs ORDER BY nama ASC`;
         const result = await db.query(query);
         return result.values || [];
     },

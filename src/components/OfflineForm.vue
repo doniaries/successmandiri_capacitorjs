@@ -1,244 +1,490 @@
 <template>
   <div class="form-container">
-    
-    <div class="form-card">
-      <div class="card-header">
-        <h2>Detail Transaksi</h2>
-        <p>Lengkapi informasi {{ props.type === 'DO' ? 'DO' : 'Operasional' }} di bawah ini</p>
-      </div>
+    <div class="form-wrapper">
+      <ion-list lines="none" class="premium-list">
+        <!-- Section: Identitas DO -->
+        <div class="section-container">
+          <div class="input-card">
+            <ion-item class="premium-item readonly-item">
+              <ion-input
+                label="NOMOR TRANSAKSI"
+                label-placement="stacked"
+                :value="form.nomor"
+                readonly
+              ></ion-input>
+            </ion-item>
 
-      <div class="form-fields">
-        <!-- Field Dinamis sesuai Filament -->
-        <template v-if="props.type === 'DO'">
-          <!-- Pencarian Penjual -->
-          <div class="ion-input-group">
-            <ion-item lines="none" class="custom-item">
-              <ion-label position="stacked">Nama Penjual (Filament)</ion-label>
-              <div class="searchable-container">
-                <ion-input 
-                  v-model="form.name" 
-                  placeholder="Cari atau tambah penjual..."
-                  mode="md"
-                  @ionInput="handleSearch"
-                ></ion-input>
-                
-                <!-- Suggestion List -->
-                <div v-if="showSuggestions && filteredSellers.length > 0" class="suggestion-list">
-                  <div 
-                    v-for="s in filteredSellers" 
-                    :key="s.id" 
-                    class="suggestion-item"
-                    @click="selectSeller(s)"
-                  >
-                    <ion-icon :icon="personOutline"></ion-icon>
-                    <span>{{ s.nama }}</span>
+            <ion-item class="premium-item" :class="{'item-error': errors.tanggal}">
+              <ion-input
+                label="TANGGAL TRANSAKSI *"
+                label-placement="stacked"
+                type="date"
+                v-model="form.tanggal"
+              ></ion-input>
+            </ion-item>
+
+            <!-- Nama Penjual with Search & Add -->
+            <ion-item class="premium-item" :class="{'item-error': errors.penjual_id}">
+              <ion-input
+                label="NAMA PENJUAL *"
+                label-placement="stacked"
+                v-model="searchTerms.seller"
+                placeholder="Cari atau pilih penjual..."
+                @ionFocus="handleSearch('seller')"
+                @ionInput="handleSearch('seller')"
+              >
+                <ion-button slot="end" fill="clear" class="input-action-btn" @click="handleSearch('seller')">
+                  <ion-icon slot="icon-only" :icon="searchOutline"></ion-icon>
+                </ion-button>
+                <ion-button slot="end" fill="clear" class="input-action-btn add-btn" @click="addNew('seller')">
+                  <ion-icon slot="icon-only" :icon="addOutline"></ion-icon>
+                </ion-button>
+              </ion-input>
+              
+              <!-- Suggestions Popover -->
+              <div v-if="suggestions.showSeller" class="suggestion-box">
+                <div v-for="s in filteredData.sellers" :key="s.id" class="sug-item" @click="selectItem('seller', s)">
+                  <div class="sug-main">
+                    <span class="sug-name">{{ s.nama }}</span>
+                    <span class="sug-sub">Hutang: {{ formatCurrency(s.hutang || 0) }}</span>
                   </div>
                 </div>
-                
-                <div v-if="showSuggestions && form.name && filteredSellers.length === 0" class="no-match" @click="addNewSeller">
-                  <ion-icon :icon="addCircleOutline"></ion-icon>
-                  <span>Tambah "{{ form.name }}" sebagai penjual baru</span>
+                <div v-if="filteredData.sellers.length === 0" class="sug-empty" @click="addNew('seller')">
+                  <ion-icon :icon="addOutline"></ion-icon>
+                  Tambah "{{ searchTerms.seller }}" sebagai penjual baru
                 </div>
               </div>
             </ion-item>
-          </div>
 
-          <!-- Tonase -->
-          <div class="ion-input-group">
-            <ion-item lines="none" class="custom-item">
-              <ion-label position="stacked">Tonase (Kg)</ion-label>
-              <ion-input v-model="form.qty" type="number" placeholder="0" mode="md"></ion-input>
+            <!-- Nama Supir with Search & Add -->
+            <ion-item class="premium-item" :class="{'item-error': errors.supir_id}">
+              <ion-input
+                label="NAMA SUPIR *"
+                label-placement="stacked"
+                v-model="searchTerms.driver"
+                placeholder="Cari atau pilih supir..."
+                @ionFocus="handleSearch('driver')"
+                @ionInput="handleSearch('driver')"
+              >
+                <ion-button slot="end" fill="clear" class="input-action-btn" @click="handleSearch('driver')">
+                  <ion-icon slot="icon-only" :icon="searchOutline"></ion-icon>
+                </ion-button>
+                <ion-button slot="end" fill="clear" class="input-action-btn add-btn" @click="addNew('driver')">
+                  <ion-icon slot="icon-only" :icon="addOutline"></ion-icon>
+                </ion-button>
+              </ion-input>
+
+              <!-- Suggestions Popover -->
+              <div v-if="suggestions.showDriver" class="suggestion-box">
+                <div v-for="d in filteredData.drivers" :key="d.id" class="sug-item" @click="selectItem('driver', d)">
+                  <span class="sug-name">{{ d.nama }}</span>
+                </div>
+                <div v-if="filteredData.drivers.length === 0" class="sug-empty" @click="addNew('driver')">
+                  <ion-icon :icon="addOutline"></ion-icon>
+                  Tambah "{{ searchTerms.driver }}" sebagai supir baru
+                </div>
+              </div>
+            </ion-item>
+
+            <ion-item class="premium-item" :class="{'item-error': errors.no_polisi}">
+              <ion-input
+                label="NOMOR POLISI *"
+                label-placement="stacked"
+                v-model="form.no_polisi"
+                placeholder="Contoh: B 1234 ABC"
+                class="uppercase-text"
+              ></ion-input>
             </ion-item>
           </div>
+        </div>
 
-          <!-- Harga Satuan -->
-          <div class="ion-input-group">
-            <ion-item lines="none" class="custom-item">
-              <ion-label position="stacked">Harga Satuan (Rp)</ion-label>
-              <ion-input v-model="form.price" type="number" placeholder="0" mode="md"></ion-input>
+        <!-- Section: Detail Tonase & Harga -->
+        <div class="section-container mt-4">
+          <div class="input-card">
+            <div class="grid-2">
+              <ion-item class="premium-item" :class="{'item-error': errors.tonase}">
+                <ion-input
+                  label="TONASE (KG) *"
+                  label-placement="stacked"
+                  inputmode="numeric"
+                  placeholder="0"
+                  :value="displayValues.tonase"
+                  @ionInput="handleNumericInput($event, 'tonase')"
+                ></ion-input>
+              </ion-item>
+              <ion-item class="premium-item" :class="{'item-error': errors.harga_satuan}">
+                <ion-input
+                  label="HARGA SATUAN *"
+                  label-placement="stacked"
+                  inputmode="numeric"
+                  placeholder="0"
+                  :value="displayValues.harga_satuan"
+                  @ionInput="handleNumericInput($event, 'harga_satuan')"
+                ></ion-input>
+              </ion-item>
+            </div>
+
+            <div class="result-box subtotal-accent">
+              <div class="res-label">SUB TOTAL (KOTOR)</div>
+              <div class="res-value">{{ formatCurrency(form.sub_total) }}</div>
+            </div>
+
+            <div class="grid-2 mt-4">
+              <ion-item class="premium-item">
+                <ion-input
+                  label="BONGKAR (RP)"
+                  label-placement="stacked"
+                  inputmode="numeric"
+                  placeholder="0"
+                  :value="displayValues.upah_bongkar"
+                  @ionInput="handleNumericInput($event, 'upah_bongkar')"
+                ></ion-input>
+              </ion-item>
+              <ion-item class="premium-item">
+                <ion-input
+                  label="BIAYA LAIN (RP)"
+                  label-placement="stacked"
+                  inputmode="numeric"
+                  placeholder="0"
+                  :value="displayValues.biaya_lain"
+                  @ionInput="handleNumericInput($event, 'biaya_lain')"
+                ></ion-input>
+              </ion-item>
+            </div>
+
+            <ion-item class="premium-item potong-hutang-item mt-4">
+              <ion-input
+                label="POTONG HUTANG (RP)"
+                label-placement="stacked"
+                inputmode="numeric"
+                placeholder="0"
+                :value="displayValues.pembayaran_hutang"
+                @ionInput="handleNumericInput($event, 'pembayaran_hutang')"
+              >
+                <div slot="helper" v-if="form.penjual_id" class="helper-info">
+                  <ion-icon :icon="cardOutline"></ion-icon>
+                  Hutang Terdaftar: {{ formatCurrency(form.hutang_awal) }}
+                </div>
+              </ion-input>
             </ion-item>
-          </div>
 
-          <!-- Cara Bayar -->
-          <div class="ion-input-group">
-            <ion-item lines="none" class="custom-item">
-              <ion-label position="stacked">Cara Bayar</ion-label>
-              <ion-select v-model="form.payment_method" interface="action-sheet" placeholder="Pilih Metode">
-                <ion-select-option value="tunai">Tunai</ion-select-option>
-                <ion-select-option value="transfer">Transfer</ion-select-option>
-                <ion-select-option value="belum_dibayar">Belum Dibayar</ion-select-option>
+            <div class="result-box final-accent mt-6">
+              <div class="res-label">TOTAL BAYAR KE PENJUAL</div>
+              <div class="res-value big">{{ formatCurrency(form.sisa_bayar) }}</div>
+              <div class="res-sub">Hutang Tersisa: {{ formatCurrency(form.sisa_hutang_penjual) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Pembayaran & Keterangan -->
+        <div class="section-container mt-4">
+          <div class="input-card">
+            <ion-item class="premium-item">
+              <ion-select
+                label="CARA PEMBAYARAN"
+                label-placement="stacked"
+                v-model="form.cara_bayar"
+                interface="action-sheet"
+                class="custom-select"
+              >
+                <ion-select-option value="tunai">Kas / Tunai</ion-select-option>
+                <ion-select-option value="transfer">Bank Transfer</ion-select-option>
+                <ion-select-option value="tunai & transfer">Tunai & Transfer</ion-select-option>
+                <ion-select-option value="belum dibayar">Hutang (Belum Dibayar)</ion-select-option>
               </ion-select>
             </ion-item>
-          </div>
-        </template>
 
-        <template v-else>
-          <!-- Operasional -->
-          <div class="ion-input-group">
-            <ion-item lines="none" class="custom-item">
-              <ion-label position="stacked">Kategori Biaya</ion-label>
-              <ion-select v-model="form.item" interface="action-sheet" placeholder="Pilih Kategori">
-                <ion-select-option value="Solar / BBM">Solar / BBM</ion-select-option>
-                <ion-select-option value="Makan / Konsumsi">Makan / Konsumsi</ion-select-option>
-                <ion-select-option value="Perbaikan / Sparepart">Perbaikan / Sparepart</ion-select-option>
-                <ion-select-option value="Gaji / Upah">Gaji / Upah</ion-select-option>
-                <ion-select-option value="Lain-lain">Lain-lain</ion-select-option>
-              </ion-select>
+            <ion-item v-if="form.cara_bayar === 'tunai & transfer'" class="premium-item info-item mt-4 animate-fade">
+              <ion-input
+                label="NOMINAL TUNAI (SISANYA TRANSFER)"
+                label-placement="stacked"
+                inputmode="numeric"
+                placeholder="0"
+                :value="displayValues.nominal_tunai"
+                @ionInput="handleNumericInput($event, 'nominal_tunai')"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item class="premium-item mt-4">
+              <ion-textarea
+                label="CATATAN / KETERANGAN"
+                label-placement="stacked"
+                v-model="form.keterangan_pembayaran"
+                placeholder="Tambahkan catatan jika diperlukan..."
+                :auto-grow="true"
+                rows="2"
+              ></ion-textarea>
             </ion-item>
           </div>
+        </div>
 
-          <div class="ion-input-group">
-            <ion-item lines="none" class="custom-item">
-              <ion-label position="stacked">Nominal (Rp)</ion-label>
-              <ion-input v-model="form.qty" type="number" placeholder="0" mode="md"></ion-input>
-            </ion-item>
-          </div>
-
-          <div class="ion-input-group">
-            <ion-item lines="none" class="custom-item">
-              <ion-label position="stacked">Keterangan</ion-label>
-              <ion-textarea v-model="form.note" placeholder="Tulis catatan di sini..." mode="md"></ion-textarea>
-            </ion-item>
-          </div>
-        </template>
-
-        <!-- Submit Button -->
-        <div class="button-section">
-          <ion-button 
-            expand="block" 
-            shape="round" 
-            color="primary" 
+        <!-- Bottom Action Buttons -->
+        <div class="bottom-actions">
+          <ion-button
+            expand="block"
             class="submit-btn"
             @click="handleSubmit"
             :disabled="loading"
           >
-            <ion-icon slot="start" :icon="saveOutline"></ion-icon>
-            {{ loading ? 'MENYIMPAN...' : 'SIMPAN TRANSAKSI' }}
+            <ion-icon slot="start" :icon="saveOutline" v-if="!loading"></ion-icon>
+            {{ loading ? "SEDANG MENYIMPAN..." : "SIMPAN TRANSAKSI SEKARANG" }}
           </ion-button>
-          
-          <ion-button 
-            expand="block" 
-            fill="clear" 
-            color="medium" 
+
+          <ion-button
+            expand="block"
+            fill="clear"
+            color="danger"
+            class="cancel-btn"
             @click="$emit('submitted')"
           >
-            Batal
+            Batalkan & Kembali
           </ion-button>
         </div>
-      </div>
-    </div>
+      </ion-list>
 
-    <!-- Sync Info -->
-    <div class="sync-info">
-      <ion-icon :icon="cloudDoneOutline"></ion-icon>
-      <span>Data akan disinkronkan otomatis saat online</span>
+      <div class="offline-notice">
+        <ion-icon :icon="cloudDoneOutline"></ion-icon>
+        Data tersimpan secara lokal dan akan sinkron saat online.
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue';
-import { 
-  IonItem, IonLabel, IonInput, IonTextarea, IonButton, 
-  IonIcon, IonSelect, IonSelectOption, toastController
-} from '@ionic/vue';
-import { 
-  saveOutline, cloudDoneOutline, personOutline, addCircleOutline 
-} from 'ionicons/icons';
-import { DatabaseService } from '../services/database';
-import { SyncService } from '../services/sync';
+import { reactive, ref, onMounted, computed } from "vue";
+import {
+  IonList,
+  IonItem,
+  IonInput,
+  IonTextarea,
+  IonButton,
+  IonIcon,
+  IonSelect,
+  IonSelectOption,
+  toastController,
+} from "@ionic/vue";
+import {
+  saveOutline,
+  cloudDoneOutline,
+  documentTextOutline,
+  scaleOutline,
+  cardOutline,
+  chevronDownOutline,
+  searchOutline,
+  addOutline,
+} from "ionicons/icons";
+import { DatabaseService } from "../services/database";
+import { SyncService } from "../services/sync";
 
 const props = defineProps({
   type: {
     type: String,
-    default: 'DO'
-  }
+    default: "DO",
+  },
 });
 
 const loading = ref(false);
-const emit = defineEmits(['submitted']);
+const emit = defineEmits(["submitted"]);
 
 const form = reactive({
-  name: '',
-  seller_id: null,
-  item: '',
-  qty: '',
-  price: '',
-  payment_method: 'tunai',
-  note: ''
+  nomor:
+    (props.type || "DO") +
+    "-" +
+    new Date().toISOString().slice(0, 10).replace(/-/g, "") +
+    "-" +
+    Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(4, "0"),
+  tanggal: new Date().toISOString().slice(0, 10),
+  penjual_id: null,
+  supir_id: null,
+  no_polisi: "",
+  tonase: 0,
+  harga_satuan: 0,
+  sub_total: 0,
+  upah_bongkar: 0,
+  biaya_lain: 0,
+  pembayaran_hutang: 0,
+  hutang_awal: 0,
+  sisa_hutang_penjual: 0,
+  cara_bayar: "tunai",
+  nominal_tunai: 0,
+  sisa_bayar: 0,
+  keterangan_pembayaran: "",
 });
 
-const sellers = ref([]);
-const filteredSellers = ref([]);
-const showSuggestions = ref(false);
+const errors = reactive({
+  tanggal: false,
+  penjual_id: false,
+  supir_id: false,
+  no_polisi: false,
+  tonase: false,
+  harga_satuan: false,
+});
+
+const displayValues = reactive({
+  tonase: "",
+  harga_satuan: "",
+  upah_bongkar: "",
+  biaya_lain: "",
+  pembayaran_hutang: "",
+  nominal_tunai: "",
+});
+
+const searchTerms = reactive({
+  seller: "",
+  driver: "",
+});
+
+const masterData = reactive({
+  sellers: [],
+  drivers: [],
+});
+
+const suggestions = reactive({
+  showSeller: false,
+  showDriver: false,
+});
+
+const filteredData = computed(() => {
+  const s = searchTerms.seller.toLowerCase();
+  const d = searchTerms.driver.toLowerCase();
+
+  return {
+    sellers: masterData.sellers
+      .filter((item) => item.nama.toLowerCase().includes(s))
+      .slice(0, 5),
+    drivers: masterData.drivers
+      .filter((item) => item.nama.toLowerCase().includes(d))
+      .slice(0, 5),
+  };
+});
 
 onMounted(async () => {
-  sellers.value = await DatabaseService.getSellers();
+  await loadMasterData();
 });
 
-const handleSearch = () => {
-  if (!form.name) {
-    filteredSellers.value = [];
-    showSuggestions.value = false;
-    return;
+const loadMasterData = async () => {
+  masterData.sellers = await DatabaseService.getSellers();
+  masterData.drivers = await DatabaseService.getDrivers();
+};
+
+const formatNumberWithDots = (val) => {
+  if (!val && val !== 0) return "";
+  return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+};
+
+const handleNumericInput = (event, field) => {
+  const rawValue = event.target.value.replace(/\./g, "").replace(/[^0-9]/g, "");
+  const numericValue = parseInt(rawValue, 10) || 0;
+
+  form[field] = numericValue;
+  displayValues[field] = formatNumberWithDots(numericValue);
+
+  calculateAll();
+};
+
+const handleSearch = (type) => {
+  if (type === "seller") {
+    suggestions.showSeller = true;
+    suggestions.showDriver = false;
+  } else {
+    suggestions.showDriver = true;
+    suggestions.showSeller = false;
   }
-  
-  filteredSellers.value = sellers.value.filter(s => 
-    s.nama.toLowerCase().includes(form.name.toLowerCase())
+};
+
+const selectItem = (type, item) => {
+  if (type === "seller") {
+    form.penjual_id = item.id;
+    form.hutang_awal = item.hutang || 0;
+    searchTerms.seller = item.nama;
+    suggestions.showSeller = false;
+  } else {
+    form.supir_id = item.id;
+    searchTerms.driver = item.nama;
+    suggestions.showDriver = false;
+  }
+  calculateAll();
+};
+
+const addNew = (type) => {
+  if (type === "seller") {
+    form.penjual_id = "NEW_" + Date.now();
+    form.hutang_awal = 0;
+    suggestions.showSeller = false;
+  } else {
+    form.supir_id = "NEW_" + Date.now();
+    suggestions.showDriver = false;
+  }
+};
+
+const calculateAll = () => {
+  form.sub_total = Math.round(form.tonase * form.harga_satuan);
+  form.sisa_bayar =
+    form.sub_total -
+    (form.upah_bongkar + form.biaya_lain + form.pembayaran_hutang);
+  form.sisa_hutang_penjual = Math.max(
+    0,
+    form.hutang_awal - form.pembayaran_hutang,
   );
-  showSuggestions.value = true;
+
+  if (form.cara_bayar !== "tunai & transfer") {
+    form.nominal_tunai = 0;
+    displayValues.nominal_tunai = "";
+  }
 };
 
-const selectSeller = (s) => {
-  form.name = s.nama;
-  form.seller_id = s.id;
-  showSuggestions.value = false;
+const formatCurrency = (val) => {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(val || 0);
 };
 
-const addNewSeller = () => {
-  form.seller_id = 'NEW_' + Date.now();
-  showSuggestions.value = false;
-};
-
-const showToast = async (message, color = 'success') => {
+const showToast = async (message, color = "success") => {
   const toast = await toastController.create({
     message: message,
-    duration: 2000,
+    duration: 2500,
     color: color,
-    position: 'top',
-    mode: 'ios'
+    position: "top",
+    mode: "ios",
   });
   await toast.present();
 };
 
 const handleSubmit = async () => {
-  if (!form.name || !form.qty) {
-    await showToast('Mohon isi field yang diperlukan!', 'warning');
+  Object.keys(errors).forEach(key => errors[key] = false);
+  let hasError = false;
+  if (!form.tanggal) { errors.tanggal = true; hasError = true; }
+  if (!form.penjual_id) { errors.penjual_id = true; hasError = true; }
+  if (!form.supir_id) { errors.supir_id = true; hasError = true; }
+  if (!form.no_polisi) { errors.no_polisi = true; hasError = true; }
+  if (form.tonase <= 0) { errors.tonase = true; hasError = true; }
+  if (form.harga_satuan <= 0) { errors.harga_satuan = true; hasError = true; }
+
+  if (hasError) {
+    await showToast("Mohon lengkapi data yang ditandai (*)!", "warning");
     return;
   }
-  
+
   loading.value = true;
   try {
-    await DatabaseService.saveTransaction({
-      ...form,
-      type: props.type,
-      status: 'pending',
-      created_at: new Date().toISOString()
-    });
-    
-    await showToast('Data disimpan secara lokal!');
+    const dataToSave = { 
+      ...form, 
+      type: props.type, 
+      name: searchTerms.seller, 
+      qty: form.tonase, 
+      status: "pending", 
+      created_at: new Date().toISOString() 
+    };
+    await DatabaseService.saveTransaction(dataToSave);
+    await showToast("Transaksi " + props.type + " berhasil disimpan!");
     if (SyncService.isOnline) SyncService.syncNow();
-
-    form.name = '';
-    form.item = '';
-    form.qty = '';
-    form.price = '';
-    form.note = '';
-    
-    setTimeout(() => emit('submitted'), 500);
+    setTimeout(() => emit("submitted"), 600);
   } catch (error) {
-    console.error(error);
-    await showToast('Gagal menyimpan data!', 'danger');
+    await showToast("Gagal menyimpan!", "danger");
   } finally {
     loading.value = false;
   }
@@ -247,146 +493,372 @@ const handleSubmit = async () => {
 
 <style scoped>
 .form-container {
-  padding-bottom: 40px;
+  background: #f8fafc;
+  min-height: 100vh;
+  padding: 0 0 40px 0;
 }
 
-.form-card {
-  background: white;
-  border-radius: 32px;
-  padding: 25px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+.dark-mode .form-container {
+  background: #000000;
 }
 
-.card-header {
-  margin-bottom: 30px;
+/* Header Styling */
+.header-section {
+  padding: 30px 20px;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.card-header h2 {
-  font-size: 20px;
+.dark-mode .header-section {
+  background: #000000;
+  border-color: #1e293b;
+}
+
+.page-title {
+  font-size: 24px;
   font-weight: 900;
-  color: #1e293b;
+  margin: 0;
+  color: #0f172a;
+}
+
+.dark-mode .page-title {
+  color: #ffffff;
+}
+
+.page-subtitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: #3b82f6;
+  margin: 4px 0 0 0;
+  letter-spacing: 1px;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.dark-mode .status-badge {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.status-badge.online {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-badge.online .dot {
+  background: #22c55e;
+}
+
+.status-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+/* Form Layout */
+.form-wrapper {
+  padding: 8px;
+}
+
+.premium-list {
+  background: transparent;
+  padding: 0;
+}
+
+.section-container {
+  margin-bottom: 12px;
+}
+
+.input-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.dark-mode .input-card {
+  background: #111827;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Premium Items */
+.premium-item {
+  --background: #f8fafc;
+  --border-radius: 16px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  --highlight-height: 0;
+  margin-bottom: 12px;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark-mode .premium-item {
+  --background: #1f2937;
+  border-color: #374151;
+}
+
+.premium-item.item-has-focus {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(59, 130, 246, 0.1);
+}
+
+.dark-mode .premium-item.item-has-focus {
+  border-color: #fbbf24;
+}
+
+.readonly-item {
+  opacity: 0.7;
+  --background: #f1f5f9;
+}
+
+.dark-mode .readonly-item {
+  --background: #111827;
+}
+
+.item-error {
+  border-color: #ef4444 !important;
+}
+
+/* Input Typography */
+ion-input, ion-textarea, ion-select {
+  --color: #0f172a;
+  --placeholder-color: #94a3b8;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.dark-mode ion-input, 
+.dark-mode ion-textarea, 
+.dark-mode ion-select {
+  --color: #f8fafc;
+}
+
+.uppercase-text {
+  text-transform: uppercase;
+}
+
+/* Buttons in Input */
+.input-action-btn {
+  --padding-start: 10px;
+  --padding-end: 10px;
+  height: 40px;
+  color: #3b82f6;
   margin: 0;
 }
 
-.card-header p {
-  font-size: 13px;
-  font-weight: 600;
-  color: #94a3b8;
-  margin: 5px 0 0;
+.add-btn {
+  color: #10b981;
 }
 
-.custom-item {
-  --background: #f8fafc;
-  --border-radius: 16px;
-  --padding-start: 16px;
-  --padding-end: 16px;
-  --padding-top: 10px;
-  --padding-bottom: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #f1f5f9;
-}
-
-.custom-item ion-label {
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  color: #64748b !important;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px !important;
-}
-
-.custom-item ion-input, 
-.custom-item ion-textarea,
-.custom-item ion-select {
-  font-size: 18px;
-  font-weight: 800;
-  color: #01579B;
-  --placeholder-color: #cbd5e1;
-}
-
-.searchable-container {
-  position: relative;
-  width: 100%;
-}
-
-.suggestion-list {
+/* Suggestion UI */
+.suggestion-box {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  z-index: 1000;
+  background: #ffffff;
+  z-index: 2000;
+  border-radius: 18px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  max-height: 200px;
+  margin-top: 8px;
+  max-height: 250px;
   overflow-y: auto;
-  margin-top: 5px;
+  animation: slideUp 0.3s ease;
 }
 
-.suggestion-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
+.dark-mode .suggestion-box {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.sug-item {
+  padding: 15px 20px;
   border-bottom: 1px solid #f1f5f9;
 }
 
-.suggestion-item ion-icon {
-  color: #64748b;
-  font-size: 18px;
+.dark-mode .sug-item {
+  border-color: #374151;
 }
 
-.suggestion-item span {
-  font-size: 14px;
+.sug-item:active {
+  background: #f8fafc;
+}
+
+.sug-name {
+  display: block;
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.dark-mode .sug-name {
+  color: #ffffff;
+}
+
+.sug-sub {
+  font-size: 12px;
   font-weight: 600;
-  color: #1e293b;
+  color: #3b82f6;
+  margin-top: 2px;
 }
 
-.no-match {
+.sug-empty {
+  padding: 20px;
+  text-align: center;
+  color: #3b82f6;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Results Display */
+.result-box {
+  padding: 20px;
+  border-radius: 20px;
+  text-align: center;
+}
+
+.subtotal-accent {
+  background: #eff6ff;
+  border: 1px dashed #3b82f6;
+}
+
+.dark-mode .subtotal-accent {
+  background: #1e293b;
+}
+
+.final-accent {
+  background: #ecfdf5;
+  border: 1px solid #10b981;
+}
+
+.dark-mode .final-accent {
+  background: #064e3b;
+}
+
+.res-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.res-value {
+  font-size: 24px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-top: 5px;
+}
+
+.dark-mode .res-value {
+  color: #ffffff;
+}
+
+.res-value.big {
+  font-size: 32px;
+  color: #10b981;
+}
+
+.res-sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: #10b981;
+  margin-top: 8px;
+}
+
+/* Utils */
+.grid-2 {
+  display: flex;
+  gap: 12px;
+}
+
+.grid-2 > * {
+  flex: 1;
+}
+
+.mt-4 { margin-top: 16px; }
+.mt-6 { margin-top: 24px; }
+.mt-8 { margin-top: 32px; }
+
+.potong-hutang-item {
+  border-color: #fbbf24;
+}
+
+.helper-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: #f8fafc;
-  border-radius: 12px;
-  margin-top: 8px;
-  cursor: pointer;
-  border: 1px dashed #cbd5e1;
-}
-
-.no-match span {
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 700;
-  color: #3b82f6;
+  color: #fbbf24;
+  margin-top: 5px;
 }
 
-.button-section {
-  margin-top: 30px;
+/* Bottom Actions */
+.bottom-actions {
+  margin-top: 40px;
 }
 
 .submit-btn {
-  height: 56px;
-  --box-shadow: 0 10px 20px rgba(1, 87, 155, 0.2);
+  --background: #3b82f6;
+  --background-activated: #2563eb;
+  --border-radius: 20px;
+  height: 64px;
   font-weight: 900;
-  letter-spacing: 1px;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  margin-bottom: 15px;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
 }
 
-.sync-info {
-  margin-top: 25px;
+.cancel-btn {
+  font-weight: 800;
+  --color: #ef4444;
+}
+
+.offline-notice {
+  margin-top: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   color: #94a3b8;
-}
-
-.sync-info ion-icon {
-  font-size: 18px;
-}
-
-.sync-info span {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
+  text-align: center;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade {
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 </style>

@@ -127,6 +127,29 @@ export const SyncService = reactive({
         }
     },
 
+    // Fungsi untuk menyinkronkan daftar supir
+    async syncDrivers() {
+        if (!this.isOnline) return;
+
+        try {
+            console.log('Menyinkronkan data supir untuk mode offline...');
+            const response = await fetch(`${API_BASE_URL}/drivers/sync`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (response.ok) {
+                const drivers = await response.json();
+                await DatabaseService.saveDrivers(drivers);
+                console.log(`${drivers.length} supir berhasil diimpor untuk mode offline.`);
+            }
+        } catch (error) {
+            console.error('Gagal sinkronisasi supir:', error);
+        }
+    },
+
     // Metode untuk mengambil data terbaru dari server
     async pullUpdates() {
         const status = await Network.getStatus();
@@ -159,8 +182,10 @@ export const SyncService = reactive({
         if (!this.isOnline) return;
         
         console.log('Memulai sinkronisasi global...');
-        await this.syncNow();   // Kirim data lokal ke server
-        await this.syncUsers(); // Ambil data user terbaru untuk offline
+        await this.syncNow();     // Kirim data lokal ke server
+        await this.syncUsers();   // Ambil data user terbaru
+        await this.syncSellers(); // Ambil data penjual terbaru
+        await this.syncDrivers(); // Ambil data supir terbaru
         await this.pullUpdates(); // Ambil data transaksi terbaru dari server
         console.log('Sinkronisasi selesai.');
     }
