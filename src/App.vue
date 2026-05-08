@@ -10,20 +10,16 @@
         <!-- Dashboard Home Content -->
         <ion-page v-if="currentTab === 'home'" id="main-content">
           <ion-header class="ion-no-border">
-            <ion-toolbar color="white" class="ion-padding-horizontal">
+            <ion-toolbar class="ion-padding-horizontal">
               <ion-buttons slot="start">
                 <div class="logo-mini">SM</div>
               </ion-buttons>
               <ion-title class="ion-text-uppercase font-black">Success Mandiri</ion-title>
               
-              <!-- Sync Status Indicator -->
               <ion-buttons slot="end">
-                <div class="sync-status-indicator" :class="{ 'offline': !SyncService.isOnline }">
-                  <div class="status-dot" :class="{ 'syncing': SyncService.isSyncing }"></div>
-                  <span class="status-text" v-if="SyncService.unsyncedCount > 0">
-                    {{ SyncService.unsyncedCount }} Pending
-                  </span>
-                </div>
+                <ion-button @click="toggleDarkMode">
+                  <ion-icon slot="icon-only" :icon="isDarkMode ? sunnyOutline : moonOutline" color="primary"></ion-icon>
+                </ion-button>
                 <ion-button @click="handleLogout" color="medium">
                   <ion-icon slot="icon-only" :icon="logOutOutline"></ion-icon>
                 </ion-button>
@@ -31,142 +27,106 @@
             </ion-toolbar>
           </ion-header>
 
-          <ion-content :fullscreen="true" color="light">
-            <div class="ion-padding main-dashboard">
-              
-              <!-- Greeting -->
+          <ion-content :fullscreen="true">
+            <div class="dashboard-wrapper">
               <div class="greeting-section">
-                <h2>Halo, Super Admin</h2>
                 <p>{{ currentDate }}</p>
+                <h2>Halo, Super Admin</h2>
               </div>
 
-              <!-- Premium 6-Widget Grid (Matching New Laravel Dashboard) -->
-              <div class="stats-grid-6">
-                <!-- Saldo Kas Perusahaan -->
-                <div class="stat-card-6 emerald">
-                  <div class="stat-header">
-                    <span>Saldo Kas Perusahaan</span>
+              <div class="nested-content">
+                <!-- Status Sinkronisasi -->
+                <div class="sync-status-bar">
+                  <div class="sync-dot" :class="{ 'synced': SyncService.isOnline }"></div>
+                  <span>{{ SyncService.isOnline ? 'Terhubung ke Laravel' : 'Mode Offline' }}</span>
+                </div>
+
+                <div class="stats-grid-6">
+                  <!-- Saldo Kas -->
+                  <div class="stat-card-6 emerald">
+                    <span class="stat-label">Saldo Kas Perusahaan</span>
+                    <h3 class="stat-value">{{ formatCurrency(stats.saldo_kas) }}</h3>
+                    <div class="stat-footer">
+                      <span class="footer-text">Total saldo tersedia</span>
+                      <ion-icon :icon="walletOutline" class="footer-icon"></ion-icon>
+                    </div>
                   </div>
-                  <div class="stat-value">{{ formatCurrency(stats.saldo_kas) }}</div>
-                  <div class="stat-footer">
-                    <span>Total saldo tersedia saat ini</span>
-                    <ion-icon :icon="walletOutline" class="footer-icon"></ion-icon>
+
+                  <!-- DO Hari Ini -->
+                  <div class="stat-card-6 blue">
+                    <span class="stat-label">DO Hari Ini</span>
+                    <h3 class="stat-value">{{ stats.do_hari_ini }}</h3>
+                    <div class="stat-footer">
+                      <span class="footer-text">Total Bruto: {{ formatCurrency(stats.total_bruto) }}</span>
+                      <ion-icon :icon="documentTextOutline" class="footer-icon"></ion-icon>
+                    </div>
+                  </div>
+
+                  <!-- Total Tonase -->
+                  <div class="stat-card-6 amber">
+                    <span class="stat-label">Total Tonase</span>
+                    <h3 class="stat-value">{{ stats.total_tonase }} Kg</h3>
+                    <div class="stat-footer">
+                      <span class="footer-text">Volume buah hari ini</span>
+                      <ion-icon :icon="scaleOutline" class="footer-icon"></ion-icon>
+                    </div>
+                  </div>
+
+                  <!-- Uang Masuk -->
+                  <div class="stat-card-6 emerald">
+                    <span class="stat-label">Uang Masuk (Hari Ini)</span>
+                    <h3 class="stat-value">{{ formatCurrency(stats.uang_masuk) }}</h3>
+                    <div class="stat-footer">
+                      <span class="footer-text">Topup: {{ formatCurrency(stats.topup) }}</span>
+                      <ion-icon :icon="trendingUpOutline" class="footer-icon"></ion-icon>
+                    </div>
+                  </div>
+
+                  <!-- Pengeluaran -->
+                  <div class="stat-card-6 rose">
+                    <span class="stat-label">Pengeluaran (Hari Ini)</span>
+                    <h3 class="stat-value">{{ formatCurrency(stats.uang_keluar) }}</h3>
+                    <div class="stat-footer">
+                      <span class="footer-text">Ops/Biaya: {{ formatCurrency(stats.ops_biaya) }}</span>
+                      <ion-icon :icon="trendingDownOutline" class="footer-icon"></ion-icon>
+                    </div>
+                  </div>
+
+                  <!-- Rekap Cara Bayar -->
+                  <div class="stat-card-6 amber">
+                    <span class="stat-label">Rekap Cara Bayar</span>
+                    <h3 class="stat-value">{{ stats.rekap_cara_bayar }} DO</h3>
+                    <div class="stat-footer">
+                      <span class="footer-text">T: {{ stats.tunai }} | Tr: {{ stats.transfer }}</span>
+                      <ion-icon :icon="cardOutline" class="footer-icon"></ion-icon>
+                    </div>
                   </div>
                 </div>
 
-                <!-- DO Hari Ini -->
-                <div class="stat-card-6 blue">
-                  <div class="stat-header">
-                    <span>DO Hari Ini</span>
+                <!-- Recent Transactions Section inside Nested -->
+                <div class="section-header flex-row">
+                  <h3>TRANSAKSI TERAKHIR</h3>
+                  <button class="view-all">SEMUA</button>
+                </div>
+                <div class="transaction-list">
+                  <div v-if="recentTransactions.length === 0" class="empty-state">
+                    <p>Belum ada transaksi</p>
                   </div>
-                  <div class="stat-value">{{ stats.do_hari_ini }}</div>
-                  <div class="stat-footer">
-                    <span>Total Bruto: {{ formatCurrency(stats.total_bruto) }}</span>
-                    <ion-icon :icon="documentTextOutline" class="footer-icon"></ion-icon>
+                  <div v-for="tx in recentTransactions" :key="tx.id" class="transaction-item">
+                    <div class="tx-icon" :class="tx.type === 'income' ? 'income' : 'expense'">
+                      <ion-icon :icon="tx.type === 'income' ? arrowUpCircleOutline : arrowDownCircleOutline"></ion-icon>
+                    </div>
+                    <div class="tx-info">
+                      <p class="tx-title">{{ tx.title }}</p>
+                      <p class="tx-date">{{ tx.date }}</p>
+                    </div>
+                    <div class="tx-amount" :class="tx.type">
+                      {{ tx.type === 'income' ? '+' : '-' }} Rp {{ formatCurrency(tx.amount) }}
+                    </div>
                   </div>
                 </div>
-
-                <!-- Total Tonase -->
-                <div class="stat-card-6 amber">
-                  <div class="stat-header">
-                    <span>Total Tonase</span>
-                  </div>
-                  <div class="stat-value">{{ stats.total_tonase }} Kg</div>
-                  <div class="stat-footer">
-                    <span>Volume buah masuk hari ini</span>
-                    <ion-icon :icon="scaleOutline" class="footer-icon"></ion-icon>
-                  </div>
-                </div>
-
-                <!-- Uang Masuk (Hari Ini) -->
-                <div class="stat-card-6 emerald">
-                  <div class="stat-header">
-                    <span>Uang Masuk (Hari Ini)</span>
-                  </div>
-                  <div class="stat-value">{{ formatCurrency(stats.uang_masuk) }}</div>
-                  <div class="stat-footer">
-                    <span>Topup: {{ formatCurrency(stats.topup) }} | Ops: {{ formatCurrency(stats.ops_biaya) }}</span>
-                    <ion-icon :icon="trendingUpOutline" class="footer-icon"></ion-icon>
-                  </div>
-                </div>
-
-                <!-- Pengeluaran (Hari Ini) -->
-                <div class="stat-card-6 rose">
-                  <div class="stat-header">
-                    <span>Pengeluaran (Hari Ini)</span>
-                  </div>
-                  <div class="stat-value">{{ formatCurrency(stats.uang_keluar) }}</div>
-                  <div class="stat-footer">
-                    <span>Bayar Tunai: {{ formatCurrency(stats.bayar_tunai) }} | Ops/Biaya: {{ formatCurrency(stats.ops_biaya) }}</span>
-                    <ion-icon :icon="trendingDownOutline" class="footer-icon"></ion-icon>
-                  </div>
-                </div>
-
-                <!-- Rekap Cara Bayar -->
-                <div class="stat-card-6 amber">
-                  <div class="stat-header">
-                    <span>Rekap Cara Bayar</span>
-                  </div>
-                  <div class="stat-value">{{ stats.rekap_cara_bayar }} DO</div>
-                  <div class="stat-footer">
-                    <span>T: {{ stats.tunai }} | Tr: {{ stats.transfer }} | C: {{ stats.cair }} | B: {{ stats.belum }}</span>
-                    <ion-icon :icon="cardOutline" class="footer-icon"></ion-icon>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Services Grid -->
-              <div class="section-header">
-                <h3>LAYANAN UTAMA</h3>
-              </div>
-              <div class="services-grid">
-                <div class="service-item" @click="currentTab = 'add'">
-                  <div class="icon-box blue">
-                    <ion-icon :icon="busOutline"></ion-icon>
-                  </div>
-                  <div class="text">
-                    <strong>TRANSAKSI DO</strong>
-                    <span>INPUT PENGIRIMAN</span>
-                  </div>
-                </div>
-                <div class="service-item">
-                  <div class="icon-box emerald">
-                    <ion-icon :icon="cashOutline"></ion-icon>
-                  </div>
-                  <div class="text">
-                    <strong>KAS HARIAN</strong>
-                    <span>LAPORAN KEUANGAN</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Recent Transactions -->
-              <div class="section-header flex-row">
-                <h3>TRANSAKSI TERAKHIR</h3>
-                <button class="view-all">SEMUA</button>
-              </div>
-              <div class="transaction-list">
-                <div v-if="recentTransactions.length === 0" class="empty-state">
-                  <p>Belum ada transaksi</p>
-                </div>
-                <div v-for="tx in recentTransactions" :key="tx.id" class="transaction-item">
-                  <div class="icon-circle">
-                    <ion-icon :icon="busOutline"></ion-icon>
-                  </div>
-                  <div class="info">
-                    <strong>{{ tx.nomor || '#DRAFT-' + tx.id }}</strong>
-                    <span>{{ tx.customer_name }} • {{ formatTime(tx.created_at) }}</span>
-                  </div>
-                  <div class="tx-amount">
-                    <span :class="tx.is_synced ? 'synced' : 'pending'">
-                      {{ tx.is_synced ? 'Synced' : 'Pending' }}
-                    </span>
-                  </div>
-                  <ion-icon :icon="chevronForwardOutline" class="chevron"></ion-icon>
-                </div>
-              </div>
-
-            </div>
+              </div> <!-- End nested-content -->
+            </div> <!-- End dashboard-wrapper -->
 
             <!-- FAB -->
             <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="custom-fab">
@@ -174,7 +134,6 @@
                 <ion-icon :icon="addOutline"></ion-icon>
               </ion-fab-button>
             </ion-fab>
-
           </ion-content>
         </ion-page>
 
@@ -579,64 +538,207 @@ onMounted(() => {
   font-size: 18px;
 }
 
-.custom-tab-bar {
-  --background: white;
-  --border-color: #f1f5f9;
-  height: 85px;
-  border-radius: 25px 25px 0 0;
-  box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
+/* Tab Bar Styling (Floating) */
+ion-tab-bar {
+  --background: var(--card-bg);
+  --border: none;
+  height: 65px;
+  width: calc(100% - 40px);
+  margin: 0 20px 20px 20px;
+  border-radius: 25px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  position: absolute;
+  bottom: 0;
+  backdrop-filter: blur(10px);
+  background: rgba(var(--tab-bg-rgb), 0.8) !important;
+  border: 1px solid var(--card-border);
 }
 
-.custom-tab-bar ion-tab-button {
-  --color-selected: #01579B;
+body:not(.dark-mode) ion-tab-bar { --tab-bg-rgb: 255, 255, 255; }
+body.dark-mode ion-tab-bar { --tab-bg-rgb: 24, 24, 27; }
+
+ion-tab-button {
   --color: #94a3b8;
+  --color-selected: #3b82f6;
+  transition: all 0.3s ease;
 }
 
-.custom-tab-bar ion-label {
+ion-tab-button ion-icon {
+  font-size: 24px;
+}
+
+ion-tab-button.tab-selected ion-icon {
+  transform: translateY(-2px);
+}
+
+ion-tab-button ion-label {
   font-size: 10px;
-  font-weight: 900;
+  font-weight: 800;
+  margin-top: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-top: 4px;
+}
+
+/* Global Content Reset */
+ion-content {
+  --background: var(--bg-color);
+  --padding-top: 0;
+  --padding-bottom: 90px;
+}
+
+/* Dashboard Layout (Nested Approach) */
+.dashboard-wrapper {
+  background: var(--bg-color);
+  min-height: 100vh;
+  position: relative;
+}
+
+.nested-content {
+  background: var(--card-bg);
+  border-radius: 32px 32px 0 0;
+  min-height: calc(100vh - 120px);
+  padding: 24px 20px;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
+  margin-top: -20px;
+  position: relative;
+  z-index: 10;
 }
 
 /* Header & Toolbar */
 ion-toolbar {
-  --background: var(--header-bg);
+  --background: var(--bg-color);
   --color: var(--text-color);
   --border-style: none;
+  --padding-top: calc(var(--safe-area-inset-top) + 15px);
+  --padding-bottom: 15px;
+  --padding-start: 16px;
+  --padding-end: 16px;
 }
 
-/* Page Setup */
-ion-content {
-  --background: var(--bg-color);
+ion-title {
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  font-size: 19px;
+  text-align: left;
 }
 
-.dashboard-container {
-  padding: 20px;
-}
-
-/* Greeting */
+/* Greeting Section */
 .greeting-section {
-  margin-top: 10px;
-  margin-bottom: 25px;
+  padding: 45px 20px 40px;
+  background: var(--bg-color);
+  position: relative;
+  z-index: 5;
 }
 
 .greeting-section h2 {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 900;
   color: var(--text-color);
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.8px;
+  line-height: 1.2;
 }
 
 .greeting-section p {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   color: #94a3b8;
   text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 8px;
+}
+
+/* Sync Status Bar */
+.sync-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 25px;
+  background: var(--bg-color);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-color);
+  border: 1px solid var(--card-border);
+}
+
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  background: #f43f5e;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
+}
+
+.sync-dot.synced {
+  background: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+/* Transaction List */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 30px 0 20px;
+}
+
+.section-header h3 {
+  font-size: 13px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.view-all {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-weight: 800;
+  font-size: 11px;
   letter-spacing: 1px;
-  margin: 5px 0 0;
+}
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.transaction-item:last-child {
+  border-bottom: none;
+}
+
+.tx-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.tx-icon.income { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.tx-icon.expense { background: rgba(244, 63, 94, 0.1); color: #f43f5e; }
+
+.tx-info { flex: 1; }
+.tx-title { font-weight: 800; font-size: 15px; color: var(--text-color); margin: 0; }
+.tx-date { font-size: 12px; color: #94a3b8; margin: 4px 0 0; font-weight: 600; }
+
+.tx-amount { font-weight: 900; font-size: 15px; }
+.tx-amount.income { color: #10b981; }
+.tx-amount.expense { color: #f43f5e; }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 0;
+  color: #94a3b8;
+  font-weight: 600;
 }
 
 .custom-fab {

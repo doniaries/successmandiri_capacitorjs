@@ -1,6 +1,9 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true" class="ion-padding no-scroll" style="--background: #01579B;">
+      <!-- Decorative Blobs -->
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
       
       <div class="login-container">
         <!-- Logo Section -->
@@ -139,11 +142,51 @@ onMounted(async () => {
   justify-content: center;
   min-height: 100%;
   padding-bottom: 20px;
+  position: relative;
+  z-index: 10;
+}
+
+/* Blob Styles */
+.blob {
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.05) 100%);
+  border-radius: 50%;
+  filter: blur(40px);
+  z-index: 1;
+  animation: float 20s infinite alternate ease-in-out;
+}
+
+.blob-1 {
+  top: -50px;
+  left: -50px;
+  background: radial-gradient(circle, rgba(2, 136, 209, 0.4) 0%, transparent 70%);
+}
+
+.blob-2 {
+  bottom: 100px;
+  right: -50px;
+  background: radial-gradient(circle, rgba(129, 212, 250, 0.3) 0%, transparent 70%);
+  animation-delay: -5s;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  33% { transform: translate(30px, 50px) rotate(10deg) scale(1.1); }
+  66% { transform: translate(-20px, 20px) rotate(-10deg) scale(0.9); }
+  100% { transform: translate(0, 0) rotate(0deg) scale(1); }
 }
 
 .logo-section {
   text-align: center;
   margin-bottom: 30px;
+  animation: fadeInDown 0.8s ease-out;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .logo-circle {
@@ -157,6 +200,11 @@ onMounted(async () => {
   margin: 0 auto 20px;
   padding: 15px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  transition: all 0.5s ease;
+}
+
+.logo-circle:hover {
+  transform: scale(1.05) rotate(5deg);
 }
 
 .logo-circle img {
@@ -183,10 +231,18 @@ onMounted(async () => {
 .login-card {
   width: 100%;
   max-width: 380px;
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 40px;
   padding: 35px 25px;
   box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .card-header h2 {
@@ -214,15 +270,16 @@ onMounted(async () => {
 
 .custom-input-group label {
   position: absolute;
-  top: -10px;
-  left: 15px;
-  background: white;
-  padding: 0 8px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #90a4ae;
+  top: -12px;
+  left: 12px;
+  background: transparent;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #546e7a;
   z-index: 10;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .input-wrapper {
@@ -310,7 +367,6 @@ onMounted(async () => {
   font-weight: 900;
   letter-spacing: 1.5px;
   box-shadow: 0 10px 20px rgba(1, 87, 155, 0.3);
-  active: transform 0.95s;
   transition: all 0.2s;
 }
 
