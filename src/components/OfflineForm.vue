@@ -100,6 +100,7 @@ import {
 } from '@ionic/vue';
 import { saveOutline, cloudDoneOutline } from 'ionicons/icons';
 import { DatabaseService } from '../services/database';
+import { SyncService } from '../services/sync';
 
 const loading = ref(false);
 const emit = defineEmits(['submitted']);
@@ -141,6 +142,11 @@ const handleSubmit = async () => {
     });
     
     await showToast('Data disimpan secara lokal!');
+
+    // Trigger sync immediately if online
+    if (SyncService.isOnline) {
+      SyncService.syncNow();
+    }
 
     // Reset form
     form.name = '';

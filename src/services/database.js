@@ -72,5 +72,21 @@ export const DatabaseService = {
     async markAsSynced(id) {
         const query = `UPDATE offline_data SET is_synced = 1 WHERE id = ?`;
         await db.run(query, [id]);
+    },
+
+    async getRecentTransactions(limit = 10) {
+        const query = `
+            SELECT * FROM offline_data 
+            WHERE type = 'transaction' 
+            ORDER BY updated_at DESC 
+            LIMIT ?
+        `;
+        const result = await db.query(query, [limit]);
+        return (result.values || []).map(item => ({
+            id: item.id,
+            ...JSON.parse(item.content),
+            is_synced: item.is_synced === 1,
+            updated_at: item.updated_at
+        }));
     }
 };

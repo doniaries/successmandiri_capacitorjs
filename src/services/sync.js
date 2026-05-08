@@ -1,39 +1,53 @@
+import { reactive } from 'vue';
 import { Network } from '@capacitor/network';
 import { DatabaseService } from './database';
 
-const API_BASE_URL = 'https://api.successmandiri.com/api/v1'; // Sesuaikan dengan URL Laravel
+const API_BASE_URL = 'http://localhost/api/v1'; // Fallback ke localhost untuk dev
 
-export const SyncService = {
+export const SyncService = reactive({
+    isOnline: true,
+    unsyncedCount: 0,
+    isSyncing: false,
+
     async init() {
+        // Update initial status
+        const status = await Network.getStatus();
+        this.isOnline = status.connected;
+        await this.updateUnsyncedCount();
+
         // Listen for network status changes
         Network.addListener('networkStatusChange', status => {
+            this.isOnline = status.connected;
             if (status.connected) {
                 console.log('Online! Memulai sinkronisasi...');
                 this.syncNow();
-            } else {
-                console.log('Offline. Mode penyimpanan lokal aktif.');
             }
         });
 
-        // Initial sync check
-        const status = await Network.getStatus();
-        if (status.connected) {
-            this.syncNow();
-        }
+        // Periodically check for unsynced data
+        setInterval(() => this.updateUnsyncedCount(), 5000);
+    },
+
+    async updateUnsyncedCount() {
+        const data = await DatabaseService.getUnsyncedData();
+        this.unsyncedCount = data.length;
     },
 
     async syncNow() {
+        if (this.isSyncing) return;
+        
         const unsyncedData = await DatabaseService.getUnsyncedData();
         
         if (unsyncedData.length === 0) {
-            console.log('Semua data sudah tersinkronisasi.');
+            this.unsyncedCount = 0;
             return;
         }
 
+        this.isSyncing = true;
         console.log(`Mengirim ${unsyncedData.length} data ke server...`);
 
-        for (const item of unsyncedData) {
-            try {
+        try {
+            for (const item of unsyncedData) {
                 const response = await fetch(`${API_BASE_URL}/sync`, {
                     method: 'POST',
                     headers: {
@@ -52,9 +66,12 @@ export const SyncService = {
                     await DatabaseService.markAsSynced(item.id);
                     console.log(`Data ${item.id} berhasil tersinkronisasi.`);
                 }
-            } catch (error) {
-                console.error(`Gagal sinkronisasi data ${item.id}:`, error);
             }
+        } catch (error) {
+            console.error(`Gagal sinkronisasi:`, error);
+        } finally {
+            this.isSyncing = false;
+            await this.updateUnsyncedCount();
         }
     },
 
@@ -84,4 +101,4 @@ export const SyncService = {
             console.error('Gagal mengambil pembaruan dari server:', error);
         }
     }
-};
+});
