@@ -1,0 +1,106 @@
+name: Create an iOS Simulator build
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-ios-simulator.yml'
+      - 'ionic_ui_templates/**'
+      - '!ionic_ui_templates/**/*.md'
+      - '!ionic_ui_templates/android/**'
+    branches:
+      - main
+
+defaults:
+  run:
+    working-directory: ionic_ui_templates
+
+jobs:
+  build-ios-simulator:
+    name: Create an iOS Simulator build
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Setup Web environment to install packages.
+      - name: Setup Web environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          # only required if project is not in the root
+          cache-dependency-path: ionic_ui_templates/package-lock.json
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        name: Xcode Compile Cache
+        with:
+          key: ${{ runner.os }}-ccache # makes a unique key w/related restore key internally
+          create-symlink: true
+          max-size: 1500M
+
+      - name: Restore node_modules from cache
+        uses: actions/cache@v4
+        with:
+          path: ionic_ui_templates/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-node-modules-
+
+      - name: Install Ionic CLI
+        run: npm install -g @ionic/cli
+
+      - name: Install packages
+        run: npm ci
+
+      # # improve iOS build compilation time
+      # - name: Restore buildcache
+      #   uses: mikehardy/buildcache-action@v2
+      #   continue-on-error: true
+
+      - name: Restore Pods cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ionic_ui_templates/ios/App/Pods
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: ${{ runner.os }}-pods-${{ hashFiles('ios/Podfile.lock') }}
+          restore-keys: ${{ runner.os }}-pods-
+
+      - name: Build the ionic project for iOS
+        run: ionic capacitor build ios --prod --no-open
+
+      - name: Install xcpretty
+        run: gem install xcpretty
+
+      - name: Run simulator build command
+        working-directory: ionic_ui_templates/ios/App
+        run: |
+          export CCACHE_SLOPPINESS=clang_index_store,file_stat_matches,include_file_ctime,include_file_mtime,ivfsoverlay,pch_defines,modules,system_headers,time_macros
+          export CCACHE_FILECLONE=true
+          export CCACHE_DEPEND=true
+          export CCACHE_INODECACHE=true
+          export CCACHE_LIMIT_MULTIPLE=0.95
+          ccache -s
+          set -o pipefail
+          xcodebuild \
+          CC=clang CPLUSPLUS=clang++ LD=clang LDPLUSPLUS=clang++ \
+          -scheme App \
+          -workspace App.xcworkspace \
+          -sdk iphonesimulator \
+          -configuration Release \
+          -derivedDataPath build | xcpretty
+          ccache -s
+
+      - name: Store build .app file as zip
+        working-directory: ionic_ui_templates/ios/App
+        run: |
+          cd build/Build/Products/Release-iphonesimulator
+          mv App.app ionic_ui_templates.app
+          mkdir -p output
+          zip -r -y -o output/ionic_ui_templates.zip ionic_ui_templates.app
+
+      - name: Save build file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ionic_ui_templates_ios_simulator
+          path: ionic_ui_templates/ios/App/build/Build/Products/Release-iphonesimulator/output

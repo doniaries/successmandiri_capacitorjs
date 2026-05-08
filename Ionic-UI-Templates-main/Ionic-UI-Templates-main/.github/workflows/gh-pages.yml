@@ -1,0 +1,67 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    paths:
+      - '.github/workflows/gh-pages.yml'
+      - 'ionic_ui_templates/**'
+      - '!ionic_ui_templates/**/*.md'
+      - '!ionic_ui_templates/android/**'
+      - '!ionic_ui_templates/ios/**'
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Web environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          # only required if project is not in the root
+          cache-dependency-path: ionic_ui_templates/package-lock.json
+
+      - name: Restore node_modules from cache
+        uses: actions/cache@v4
+        with:
+          path: ionic_ui_templates/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-node-modules-
+
+      - name: Install Ionic CLI
+        run: npm install -g @ionic/cli
+
+      - name: Install packages
+        working-directory: ionic_ui_templates
+        run: npm ci
+
+      - name: Build web
+        working-directory: ionic_ui_templates
+        run: npx ionic build --prod -- --base-href /Ionic-UI-Templates/
+
+      # Below 3 steps can also be done by this command, but skipping cause of git info requirement
+      # - name: Deploy
+      #   run: npx angular-cli-ghpages --dir=www
+
+      # below 2 steps to avoid 404 error when refreshing on nested routes
+      # ref: https://angular.io/guide/deployment#deploy-to-github-pages
+      - name: Copy index.html
+        working-directory: ionic_ui_templates
+        run: cp www/index.html www/newIndex.html
+
+      - name: Rename to 404.html
+        working-directory: ionic_ui_templates
+        run: mv www/newIndex.html www/404.html
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./ionic_ui_templates/www
