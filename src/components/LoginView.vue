@@ -56,11 +56,10 @@
 
             <!-- Options -->
             <div class="options-row">
-              <ion-item lines="none" class="remember-me">
-                <ion-checkbox v-model="rememberMe" slot="start" mode="md"></ion-checkbox>
-                <ion-label>Ingat Saya</ion-label>
-              </ion-item>
-              <a href="#" class="forgot-link">Lupa Password?</a>
+              <div class="remember-me-container">
+                <ion-checkbox v-model="rememberMe" mode="md"></ion-checkbox>
+                <span class="remember-text">Ingat Saya</span>
+              </div>
             </div>
 
             <!-- Login Button -->
@@ -85,11 +84,15 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { 
-  IonPage, IonContent, IonCheckbox, IonLabel, IonItem, IonIcon 
+  IonPage, IonContent, IonCheckbox, IonLabel, IonItem, IonIcon, toastController
 } from '@ionic/vue';
 import { 
   mailOutline, lockClosedOutline, eyeOutline, eyeOffOutline, chevronDownCircleOutline 
 } from 'ionicons/icons';
+import { SyncService } from '../services/sync';
+import { DatabaseService } from '../services/database';
+import bcrypt from 'bcryptjs';
+import { Capacitor } from '@capacitor/core';
 
 const email = ref('superadmin@gmail.com');
 const password = ref('password');
@@ -106,12 +109,103 @@ const settings = reactive({
 
 const emit = defineEmits(['login-success']);
 
-const handleLogin = () => {
+const handleLogin = async () => {
+  if (!email.value || !password.value) {
+    const toast = await toastController.create({
+      message: 'Email dan password harus diisi',
+      duration: 2000,
+      color: 'danger',
+      position: 'bottom'
+    });
+    await toast.present();
+    return;
+  }
+
   loading.value = true;
-  setTimeout(() => {
+
+  try {
+    const platform = Capacitor.getPlatform();
+    console.log(`Menjalankan login di platform: ${platform}`);
+
+    // 1. STRATEGI WEB: Harus Online ke Laravel
+    if (platform === 'web') {
+      try {
+        const response = await fetch('http://localhost:8000/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.value, password: password.value })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          loading.value = false;
+          emit('login-success', { token: data.token });
+          return;
+        } else {
+          const errData = await response.json();
+          throw new Error(errData.message || 'Login Gagal (Server)');
+        }
+      } catch (e) {
+        // Jika di web tapi server mati, beri opsi offline jika user mau, 
+        // tapi sesuai instruksi: "web seharusnya bisa login dan terhubung dengan database laravel"
+        console.error("Web login failed:", e);
+        if (e.message.includes('Failed to fetch')) {
+          throw new Error('Tidak dapat terhubung ke server Laravel (Pastikan Server Aktif di port 8000)');
+        }
+        throw e;
+      }
+    }
+
+    // 2. STRATEGI MOBILE: Hybrid (Online jika bisa, Offline jika perlu)
+    if (SyncService.isOnline) {
+      try {
+        const response = await fetch('http://localhost:8000/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.value, password: password.value })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          loading.value = false;
+          emit('login-success', { token: data.token });
+          return;
+        }
+      } catch (e) {
+        console.warn("Mobile online login failed, falling back to SQLite...");
+      }
+    }
+
+    // Login Offline (SQLite) untuk Mobile
+    const cleanEmail = email.value.trim().toLowerCase();
+    const user = await DatabaseService.findUserByEmail(cleanEmail);
+    
+    if (user) {
+      const isValid = bcrypt.compareSync(password.value, user.password);
+      if (isValid) {
+        setTimeout(() => {
+          loading.value = false;
+          emit('login-success', { token: 'offline-' + user.id });
+        }, 800);
+        return;
+      } else {
+        throw new Error('Password salah (Mode Offline)');
+      }
+    } else {
+      throw new Error('Data user belum tersedia di HP (Harus login online sekali)');
+    }
+
+  } catch (error) {
     loading.value = false;
-    emit('login-success');
-  }, 1000);
+    console.error("Login Error:", error.message);
+    const toast = await toastController.create({
+      message: error.message || 'Login Gagal',
+      duration: 3000,
+      color: 'danger',
+      position: 'bottom'
+    });
+    await toast.present();
+  }
 };
 
 const onLogoError = (e) => {
@@ -332,27 +426,31 @@ onMounted(async () => {
   --padding-start: 0;
   --background: transparent;
   min-height: auto;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 25px;
+  padding: 0 5px;
 }
 
-.remember-me ion-checkbox {
-  --size: 20px;
-  --border-radius: 4px;
-  --border-color: #cfd8dc;
-  --checkbox-background-checked: #01579B;
-  margin-right: 10px;
+.remember-me-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.remember-me ion-label {
-  font-size: 12px;
+.remember-text {
+  font-size: 14px;
   font-weight: 700;
   color: #546e7a;
+  white-space: nowrap;
 }
 
-.forgot-link {
-  font-size: 12px;
-  font-weight: 800;
-  color: #0288d1;
-  text-decoration: none;
+ion-checkbox {
+  --size: 20px;
+  --checkbox-background-checked: #01579B;
+  --border-color: #90a4ae;
+  --border-color-checked: #01579B;
+  margin: 0;
 }
 
 .login-button {

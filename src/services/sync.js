@@ -2,7 +2,7 @@ import { reactive } from 'vue';
 import { Network } from '@capacitor/network';
 import { DatabaseService } from './database';
 
-const API_BASE_URL = 'http://localhost/api/v1'; // Fallback ke localhost untuk dev
+const API_BASE_URL = 'http://localhost:8000/api'; // Disesuaikan dengan port Laravel dev
 
 export const SyncService = reactive({
     isOnline: true,
@@ -15,12 +15,18 @@ export const SyncService = reactive({
         this.isOnline = status.connected;
         await this.updateUnsyncedCount();
 
+        // Sync users if online
+        if (this.isOnline) {
+            this.syncUsers();
+        }
+
         // Listen for network status changes
         Network.addListener('networkStatusChange', status => {
             this.isOnline = status.connected;
             if (status.connected) {
                 console.log('Online! Memulai sinkronisasi...');
                 this.syncNow();
+                this.syncUsers();
             }
         });
 
@@ -75,6 +81,29 @@ export const SyncService = reactive({
         }
     },
 
+    // Fungsi untuk menyinkronkan daftar pengguna dari Laravel (untuk login offline)
+    async syncUsers() {
+        if (!this.isOnline) return;
+
+        try {
+            console.log('Menyinkronkan data pengguna untuk mode offline...');
+            const response = await fetch(`${API_BASE_URL}/users/sync`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (response.ok) {
+                const users = await response.json();
+                await DatabaseService.saveUsers(users);
+                console.log(`${users.length} pengguna berhasil diimpor untuk mode offline.`);
+            }
+        } catch (error) {
+            console.error('Gagal sinkronisasi pengguna:', error);
+        }
+    },
+
     // Metode untuk mengambil data terbaru dari server
     async pullUpdates() {
         const status = await Network.getStatus();
@@ -100,5 +129,16 @@ export const SyncService = reactive({
         } catch (error) {
             console.error('Gagal mengambil pembaruan dari server:', error);
         }
+    },
+
+    // Metode utama untuk menjalankan semua proses sinkronisasi
+    async syncAll() {
+        if (!this.isOnline) return;
+        
+        console.log('Memulai sinkronisasi global...');
+        await this.syncNow();   // Kirim data lokal ke server
+        await this.syncUsers(); // Ambil data user terbaru untuk offline
+        await this.pullUpdates(); // Ambil data transaksi terbaru dari server
+        console.log('Sinkronisasi selesai.');
     }
 });

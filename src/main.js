@@ -4,6 +4,10 @@ import App from './App.vue'
 import router from './router';
 import { DatabaseService } from './services/database'
 import { SyncService } from './services/sync'
+import { defineCustomElements as jeepSqlite } from 'jeep-sqlite/loader';
+import { Capacitor } from '@capacitor/core';
+
+jeepSqlite(window);
 
 /* Ionic Core CSS */
 import { IonicVue } from '@ionic/vue';

@@ -1,7 +1,7 @@
 <template>
   <ion-app>
     <!-- Login View Condition -->
-    <LoginView v-if="!isLoggedIn" @login-success="isLoggedIn = true" />
+    <LoginView v-if="!isLoggedIn" @login-success="handleLoginSuccess" />
 
     <template v-else>
       <ion-tabs>
@@ -222,10 +222,10 @@ import OfflineForm from './components/OfflineForm.vue';
 import { SyncService } from './services/sync';
 import { DatabaseService } from './services/database';
 
-const isLoggedIn = ref(true);
+const isLoggedIn = ref(false);
 const currentTab = ref('home');
 const recentTransactions = ref([]);
-const isDarkMode = ref(localStorage.getItem('theme') !== 'light'); // Default dark
+const isDarkMode = ref(localStorage.getItem('theme') === 'dark'); // Default putih (false)
 
 const stats = reactive({
   saldo_kas: 46500000,
@@ -300,12 +300,42 @@ const updateTime = () => {
   currentTime.value = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // Check if session exists
+  const token = localStorage.getItem('token');
+  if (token) {
+    isLoggedIn.value = true;
+    console.log("Session restored from token");
+  }
+
   updateTheme();
+  await DatabaseService.init();
+  await SyncService.init();
+  
+  // Triger sync awal saat refresh
+  if (isLoggedIn.value && SyncService.isOnline) {
+    console.log("Triggering auto-sync on refresh...");
+    SyncService.syncAll(); 
+  }
+
   loadDashboardData();
+  
   setInterval(updateTime, 1000);
   setInterval(loadDashboardData, 10000);
 });
+
+const handleLoginSuccess = (data) => {
+  isLoggedIn.value = true;
+  if (data && data.token) {
+    localStorage.setItem('token', data.token);
+    console.log("Token saved to localStorage");
+  }
+  
+  // Langsung sync setelah login
+  if (SyncService.isOnline) {
+    SyncService.syncAll();
+  }
+};
 </script>
 
 <style scoped>
