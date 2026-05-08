@@ -33,7 +33,6 @@
                   type="email" 
                   placeholder="superadmin@gmail.com"
                 >
-                <ion-icon :icon="chevronDownCircleOutline" class="suffix-icon"></ion-icon>
               </div>
             </div>
 

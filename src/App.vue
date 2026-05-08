@@ -650,7 +650,7 @@ ion-title {
 
 /* Profile Card Styling */
 .profile-card-container {
-  padding: 20px;
+  padding: 60px 20px 30px;
   background: var(--bg-color);
 }
 
