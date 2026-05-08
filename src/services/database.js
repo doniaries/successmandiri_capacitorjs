@@ -60,8 +60,34 @@ export const DatabaseService = {
                 is_synced INTEGER DEFAULT 0,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS penjuals (
+                id INTEGER PRIMARY KEY,
+                nama TEXT NOT NULL,
+                alamat TEXT,
+                telepon TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
         `;
         await db.execute(query);
+    },
+
+    async saveSellers(sellers) {
+        if (!sellers || !sellers.length) return;
+        for (const s of sellers) {
+            const query = `
+                INSERT OR REPLACE INTO penjuals (id, nama, alamat, telepon, updated_at)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `;
+            await db.run(query, [s.id, s.nama, s.alamat, s.telepon]);
+        }
+    },
+
+    async getSellers() {
+        await this.init();
+        const query = `SELECT * FROM penjuals ORDER BY nama ASC`;
+        const result = await db.query(query);
+        return result.values || [];
     },
 
     async seedData() {

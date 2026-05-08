@@ -66,15 +66,105 @@
               </div>
 
               <div class="nested-content">
-                <!-- Quick Action Cards -->
-                <div class="quick-actions-grid">
+                <!-- Tabs Statistik -->
+                <div class="stats-tabs-container">
+                  <ion-segment v-model="statTab" mode="ios" class="custom-segment">
+                    <ion-segment-button value="keuangan">
+                      <ion-label>Keuangan</ion-label>
+                    </ion-segment-button>
+                    <ion-segment-button value="operasional">
+                      <ion-label>Operasional</ion-label>
+                    </ion-segment-button>
+                  </ion-segment>
+                </div>
+
+                <!-- Widgets Keuangan -->
+                <div v-if="statTab === 'keuangan'" class="stats-grid-compact horizontal-scroll">
+                  <!-- Saldo Kas -->
+                  <div class="stat-card-mini emerald">
+                    <div class="mini-header">
+                      <span>Saldo Kas Perusahaan</span>
+                    </div>
+                    <h3 class="mini-value">{{ formatCurrency(stats.saldo_kas) }}</h3>
+                    <div class="mini-footer">
+                      <span class="footer-label">Total saldo tersedia</span>
+                      <ion-icon :icon="walletOutline"></ion-icon>
+                    </div>
+                  </div>
+
+                  <!-- Uang Masuk -->
+                  <div class="stat-card-mini blue">
+                    <div class="mini-header">
+                      <span>Uang Masuk (Hari Ini)</span>
+                    </div>
+                    <h3 class="mini-value">{{ formatCurrency(stats.uang_masuk) }}</h3>
+                    <div class="mini-footer">
+                      <span class="footer-label">Total topup hari ini</span>
+                      <ion-icon :icon="trendingUpOutline"></ion-icon>
+                    </div>
+                  </div>
+
+                  <!-- Pengeluaran -->
+                  <div class="stat-card-mini rose">
+                    <div class="mini-header">
+                      <span>Pengeluaran (Hari Ini)</span>
+                    </div>
+                    <h3 class="mini-value">{{ formatCurrency(stats.uang_keluar) }}</h3>
+                    <div class="mini-footer">
+                      <span class="footer-label">Total biaya operasional</span>
+                      <ion-icon :icon="trendingDownOutline"></ion-icon>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Widgets Operasional -->
+                <div v-if="statTab === 'operasional'" class="stats-grid-compact horizontal-scroll">
+                  <!-- DO Hari Ini -->
+                  <div class="stat-card-mini blue">
+                    <div class="mini-header">
+                      <span>DO Hari Ini</span>
+                    </div>
+                    <h3 class="mini-value">{{ stats.do_hari_ini }} DO</h3>
+                    <div class="mini-footer">
+                      <span class="footer-label">Total Bruto: {{ formatCurrency(stats.total_bruto) }}</span>
+                      <ion-icon :icon="documentTextOutline"></ion-icon>
+                    </div>
+                  </div>
+
+                  <!-- Total Tonase -->
+                  <div class="stat-card-mini amber">
+                    <div class="mini-header">
+                      <span>Total Tonase</span>
+                    </div>
+                    <h3 class="mini-value">{{ stats.total_tonase }} Kg</h3>
+                    <div class="mini-footer">
+                      <span class="footer-label">Volume buah hari ini</span>
+                      <ion-icon :icon="scaleOutline"></ion-icon>
+                    </div>
+                  </div>
+
+                  <!-- Rekap Cara Bayar -->
+                  <div class="stat-card-mini emerald">
+                    <div class="mini-header">
+                      <span>Rekap Cara Bayar</span>
+                    </div>
+                    <h3 class="mini-value">{{ stats.tunai }} T | {{ stats.transfer }} Tr</h3>
+                    <div class="mini-footer">
+                      <span class="footer-label">T: Tunai, Tr: Transfer</span>
+                      <ion-icon :icon="cardOutline"></ion-icon>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quick Action Cards (Moved Below) -->
+                <div class="quick-actions-grid" style="margin-top: 10px;">
                   <div class="action-card primary" @click="currentTab = 'add'; currentFormType = 'DO'">
                     <div class="action-icon">
                       <ion-icon :icon="addOutline"></ion-icon>
                     </div>
                     <div class="action-text">
                       <h4>Transaksi DO</h4>
-                      <p>Input pengiriman barang</p>
+                      <p>Input pengiriman</p>
                     </div>
                   </div>
                   <div class="action-card secondary" @click="currentTab = 'add'; currentFormType = 'OPS'">
@@ -84,68 +174,6 @@
                     <div class="action-text">
                       <h4>Operasional</h4>
                       <p>Biaya & pengeluaran</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="stats-grid-6">
-                  <!-- Saldo Kas -->
-                  <div class="stat-card-6 emerald">
-                    <span class="stat-label">Saldo Kas Perusahaan</span>
-                    <h3 class="stat-value">{{ formatCurrency(stats.saldo_kas) }}</h3>
-                    <div class="stat-footer">
-                      <span class="footer-text">Total saldo tersedia</span>
-                      <ion-icon :icon="walletOutline" class="footer-icon"></ion-icon>
-                    </div>
-                  </div>
-
-                  <!-- DO Hari Ini -->
-                  <div class="stat-card-6 blue">
-                    <span class="stat-label">DO Hari Ini</span>
-                    <h3 class="stat-value">{{ stats.do_hari_ini }}</h3>
-                    <div class="stat-footer">
-                      <span class="footer-text">Total Bruto: {{ formatCurrency(stats.total_bruto) }}</span>
-                      <ion-icon :icon="documentTextOutline" class="footer-icon"></ion-icon>
-                    </div>
-                  </div>
-
-                  <!-- Total Tonase -->
-                  <div class="stat-card-6 amber">
-                    <span class="stat-label">Total Tonase</span>
-                    <h3 class="stat-value">{{ stats.total_tonase }} Kg</h3>
-                    <div class="stat-footer">
-                      <span class="footer-text">Volume buah hari ini</span>
-                      <ion-icon :icon="scaleOutline" class="footer-icon"></ion-icon>
-                    </div>
-                  </div>
-
-                  <!-- Uang Masuk -->
-                  <div class="stat-card-6 emerald">
-                    <span class="stat-label">Uang Masuk (Hari Ini)</span>
-                    <h3 class="stat-value">{{ formatCurrency(stats.uang_masuk) }}</h3>
-                    <div class="stat-footer">
-                      <span class="footer-text">Topup: {{ formatCurrency(stats.topup) }}</span>
-                      <ion-icon :icon="trendingUpOutline" class="footer-icon"></ion-icon>
-                    </div>
-                  </div>
-
-                  <!-- Pengeluaran -->
-                  <div class="stat-card-6 rose">
-                    <span class="stat-label">Pengeluaran (Hari Ini)</span>
-                    <h3 class="stat-value">{{ formatCurrency(stats.uang_keluar) }}</h3>
-                    <div class="stat-footer">
-                      <span class="footer-text">Ops/Biaya: {{ formatCurrency(stats.ops_biaya) }}</span>
-                      <ion-icon :icon="trendingDownOutline" class="footer-icon"></ion-icon>
-                    </div>
-                  </div>
-
-                  <!-- Rekap Cara Bayar -->
-                  <div class="stat-card-6 amber">
-                    <span class="stat-label">Rekap Cara Bayar</span>
-                    <h3 class="stat-value">{{ stats.rekap_cara_bayar }} DO</h3>
-                    <div class="stat-footer">
-                      <span class="footer-text">T: {{ stats.tunai }} | Tr: {{ stats.transfer }}</span>
-                      <ion-icon :icon="cardOutline" class="footer-icon"></ion-icon>
                     </div>
                   </div>
                 </div>
@@ -277,7 +305,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { 
   IonApp, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel, 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton,
-  IonFab, IonFabButton, IonRefresher, IonRefresherContent
+  IonFab, IonFabButton, IonRefresher, IonRefresherContent, IonSegment, IonSegmentButton
 } from '@ionic/vue';
 import { 
   gridOutline, timeOutline, personOutline, logOutOutline, walletOutline,
@@ -294,6 +322,7 @@ import { DatabaseService } from './services/database';
 
 const isLoggedIn = ref(false);
 const currentTab = ref('home');
+const statTab = ref('keuangan');
 const currentFormType = ref('DO'); // 'DO' atau 'OPS'
 const recentTransactions = ref([]);
 const isDarkMode = ref(localStorage.getItem('theme') === 'dark'); // Default putih (false)
@@ -1161,5 +1190,150 @@ ion-title {
   0% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(1.2); }
   100% { opacity: 1; transform: scale(1); }
+}
+/* Stats Tabs & Mini Cards Redesign */
+.stats-tabs-container {
+  margin-bottom: 15px;
+  padding: 0 5px;
+}
+
+.custom-segment {
+  --background: #f1f5f9;
+  border-radius: 16px;
+  padding: 6px;
+}
+
+.stats-grid-compact {
+  display: flex;
+  gap: 16px;
+  padding: 5px 5px 25px 5px;
+  margin-bottom: 5px;
+}
+
+.horizontal-scroll {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.stat-card-mini {
+  flex: 0 0 240px; /* Lebar lebih besar agar mirip gambar */
+  padding: 24px;
+  border-radius: 28px;
+  background: white;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  scroll-snap-align: center;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.02);
+}
+
+.dark-mode .stat-card-mini {
+  background: #1e1e1e;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.mini-header {
+  margin-bottom: 12px;
+}
+
+.mini-header span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  letter-spacing: 0.2px;
+}
+
+.dark-mode .mini-header span {
+  color: #94a3b8;
+}
+
+.mini-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: #000000;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.5px;
+}
+
+.dark-mode .mini-value {
+  color: #ffffff;
+}
+
+.mini-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.footer-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #10b981;
+}
+
+.mini-footer ion-icon {
+  font-size: 18px;
+  color: #10b981;
+}
+
+/* Color Overrides for specific cards */
+.stat-card-mini.rose .footer-label, 
+.stat-card-mini.rose .mini-footer ion-icon { color: #f43f5e; }
+
+.stat-card-mini.blue .footer-label, 
+.stat-card-mini.blue .mini-footer ion-icon { color: #3b82f6; }
+
+.stat-card-mini.amber .footer-label, 
+.stat-card-mini.amber .mini-footer ion-icon { color: #f59e0b; }
+/* Global Dark Mode Support */
+.dark-mode {
+  --ion-background-color: #121212;
+  --ion-text-color: #ffffff;
+  background: #121212;
+  color: #ffffff;
+}
+
+.dark-mode ion-content, 
+.dark-mode ion-page,
+.dark-mode .nested-content {
+  --background: #121212;
+  background: #121212;
+}
+
+.dark-mode .section-header h3,
+.dark-mode .action-text h4,
+.dark-mode .tx-title,
+.dark-mode .tx-amount:not(.rose-text):not(.blue-text) {
+  color: #ffffff;
+}
+
+.dark-mode .transaction-item {
+  background: #1e1e1e;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.dark-mode .action-card {
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.dark-mode .custom-segment {
+  --background: #1e1e1e;
+}
+
+.dark-mode ion-toolbar {
+  --background: #121212;
+  --color: #ffffff;
+}
+
+.dark-mode .custom-tab-bar {
+  --background: #1e1e1e;
+  border-top: 1px solid rgba(255,255,255,0.05);
 }
 </style>

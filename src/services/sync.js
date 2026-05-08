@@ -104,6 +104,29 @@ export const SyncService = reactive({
         }
     },
 
+    // Fungsi untuk menyinkronkan daftar penjual
+    async syncSellers() {
+        if (!this.isOnline) return;
+
+        try {
+            console.log('Menyinkronkan data penjual untuk mode offline...');
+            const response = await fetch(`${API_BASE_URL}/sellers/sync`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (response.ok) {
+                const sellers = await response.json();
+                await DatabaseService.saveSellers(sellers);
+                console.log(`${sellers.length} penjual berhasil diimpor untuk mode offline.`);
+            }
+        } catch (error) {
+            console.error('Gagal sinkronisasi penjual:', error);
+        }
+    },
+
     // Metode untuk mengambil data terbaru dari server
     async pullUpdates() {
         const status = await Network.getStatus();
