@@ -144,5 +144,27 @@ export const DatabaseService = {
             is_synced: item.is_synced === 1,
             updated_at: item.updated_at
         }));
+    },
+
+    async getDashboardStats() {
+        const query = `SELECT content FROM offline_data WHERE type = 'transaction'`;
+        const result = await db.query(query);
+        const transactions = (result.values || []).map(t => JSON.parse(t.content));
+        
+        let totalTonase = 0;
+        let totalDO = transactions.length;
+        
+        transactions.forEach(t => {
+            totalTonase += parseFloat(t.qty || 0);
+        });
+
+        return {
+            total_tonase: totalTonase,
+            do_hari_ini: totalDO,
+            saldo_kas: 46500000, // Static for now or fetch from somewhere
+            uang_masuk: 0,
+            uang_keluar: 0,
+            rekap_cara_bayar: totalDO
+        };
     }
 };

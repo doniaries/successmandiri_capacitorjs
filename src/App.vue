@@ -38,11 +38,16 @@
           </ion-header>
 
           <ion-content :fullscreen="true">
+            <!-- Pull to Refresh -->
+            <ion-refresher slot="fixed" @ionRefresh="doRefresh($event)">
+              <ion-refresher-content></ion-refresher-content>
+            </ion-refresher>
+
             <div class="dashboard-wrapper">
               
               <!-- Premium Profile Card -->
-              <div class="profile-card-container">
-                <div class="profile-card">
+              <div class="profile-card-container" @click="currentTab = 'profile'">
+                <div class="profile-card clickable">
                   <div class="profile-main">
                     <div class="avatar-wrapper">
                       <img src="https://ui-avatars.com/api/?name=Super+Admin&background=01579B&color=fff" alt="User">
@@ -61,6 +66,28 @@
               </div>
 
               <div class="nested-content">
+                <!-- Quick Action Cards -->
+                <div class="quick-actions-grid">
+                  <div class="action-card primary" @click="currentTab = 'add'; currentFormType = 'DO'">
+                    <div class="action-icon">
+                      <ion-icon :icon="addOutline"></ion-icon>
+                    </div>
+                    <div class="action-text">
+                      <h4>Transaksi DO</h4>
+                      <p>Input pengiriman barang</p>
+                    </div>
+                  </div>
+                  <div class="action-card secondary" @click="currentTab = 'add'; currentFormType = 'OPS'">
+                    <div class="action-icon">
+                      <ion-icon :icon="cashOutline"></ion-icon>
+                    </div>
+                    <div class="action-text">
+                      <h4>Operasional</h4>
+                      <p>Biaya & pengeluaran</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div class="stats-grid-6">
                   <!-- Saldo Kas -->
                   <div class="stat-card-6 emerald">
@@ -133,52 +160,87 @@
                     <p>Belum ada transaksi</p>
                   </div>
                   <div v-for="tx in recentTransactions" :key="tx.id" class="transaction-item">
-                    <div class="tx-icon" :class="tx.type === 'income' ? 'income' : 'expense'">
-                      <ion-icon :icon="tx.type === 'income' ? arrowUpCircleOutline : arrowDownCircleOutline"></ion-icon>
+                    <div class="tx-icon" :class="tx.type === 'OPS' ? 'rose' : 'blue'">
+                      <ion-icon :icon="tx.type === 'OPS' ? cashOutline : busOutline"></ion-icon>
                     </div>
                     <div class="tx-info">
-                      <p class="tx-title">{{ tx.title }}</p>
-                      <p class="tx-date">{{ tx.date }}</p>
+                      <p class="tx-title">{{ tx.customer_name || 'Tanpa Nama' }}</p>
+                      <p class="tx-date">{{ tx.item_name }} • {{ formatTime(tx.created_at) }}</p>
                     </div>
-                    <div class="tx-amount" :class="tx.type">
-                      {{ tx.type === 'income' ? '+' : '-' }} Rp {{ formatCurrency(tx.amount) }}
+                    <div class="tx-amount" :class="tx.type === 'OPS' ? 'rose-text' : 'blue-text'">
+                      {{ tx.type === 'OPS' ? 'Rp ' + formatCurrency(tx.qty) : tx.qty + ' Kg' }}
                     </div>
                   </div>
                 </div>
               </div> <!-- End nested-content -->
             </div> <!-- End dashboard-wrapper -->
 
-            <!-- FAB -->
-            <ion-fab vertical="bottom" horizontal="end" slot="fixed" class="custom-fab">
-              <ion-fab-button @click="currentTab = 'add'" color="primary">
-                <ion-icon :icon="addOutline"></ion-icon>
-              </ion-fab-button>
-            </ion-fab>
           </ion-content>
         </ion-page>
 
-        <!-- Form Page Content -->
+        <!-- History Page Content -->
+        <ion-page v-if="currentTab === 'history'">
+          <ion-header class="ion-no-border">
+            <ion-toolbar class="ion-padding-horizontal">
+              <ion-title>Riwayat Transaksi</ion-title>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <div class="nested-content">
+              <h3>Daftar Riwayat</h3>
+              <p>Halaman Riwayat Transaksi Sedang Dikembangkan...</p>
+            </div>
+          </ion-content>
+        </ion-page>
+
+        <!-- Profile Page Content -->
+        <ion-page v-if="currentTab === 'profile'">
+          <ion-header class="ion-no-border">
+            <ion-toolbar class="ion-padding-horizontal">
+              <ion-title>Profil Pengguna</ion-title>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <div class="nested-content">
+              <div class="profile-card-container">
+                <div class="profile-card">
+                   <div class="profile-main">
+                      <div class="avatar-wrapper">
+                        <img src="https://ui-avatars.com/api/?name=Super+Admin&background=01579B&color=fff" alt="User">
+                      </div>
+                      <div class="profile-info">
+                        <h2>Super Admin</h2>
+                        <p>superadmin@gmail.com</p>
+                      </div>
+                   </div>
+                </div>
+              </div>
+              <ion-button expand="block" color="danger" @click="handleLogout" style="margin-top: 20px;">
+                LOGOUT
+              </ion-button>
+            </div>
+          </ion-content>
+        </ion-page>
+
+        <!-- Add Transaction Page -->
         <ion-page v-if="currentTab === 'add'">
-          <ion-header>
-            <ion-toolbar color="primary">
+          <ion-header class="ion-no-border">
+            <ion-toolbar class="ion-padding-horizontal">
               <ion-buttons slot="start">
                 <ion-button @click="currentTab = 'home'">
                   <ion-icon slot="icon-only" :icon="arrowBackOutline"></ion-icon>
                 </ion-button>
               </ion-buttons>
-              <ion-buttons slot="end">
-                <ion-button @click="toggleDarkMode">
-                  <ion-icon :icon="isDarkMode ? sunnyOutline : moonOutline" color="primary"></ion-icon>
-                </ion-button>
-                <ion-button @click="handleLogout">
-                  <ion-icon :icon="logOutOutline" color="danger"></ion-icon>
-                </ion-button>
-              </ion-buttons>
-              <ion-title>Tambah Transaksi</ion-title>
+              <ion-title>{{ currentFormType === 'DO' ? 'Tambah DO' : 'Tambah Operasional' }}</ion-title>
             </ion-toolbar>
           </ion-header>
-          <ion-content class="ion-padding" color="light">
-            <OfflineForm @submitted="currentTab = 'home'" />
+          <ion-content class="ion-padding">
+            <div class="nested-content">
+              <OfflineForm 
+                :type="currentFormType"
+                @submitted="currentTab = 'home'; loadDashboardData()" 
+              />
+            </div>
           </ion-content>
         </ion-page>
 
@@ -188,11 +250,18 @@
             <ion-icon :icon="gridOutline"></ion-icon>
             <ion-label>Beranda</ion-label>
           </ion-tab-button>
-          <ion-tab-button tab="history">
+          <ion-tab-button tab="history" @click="currentTab = 'history'" :selected="currentTab === 'history'">
             <ion-icon :icon="timeOutline"></ion-icon>
             <ion-label>Riwayat</ion-label>
           </ion-tab-button>
-          <ion-tab-button tab="profile">
+          
+          <!-- Central Add Button -->
+          <ion-tab-button tab="add" @click="currentTab = 'add'" class="center-add-tab">
+            <ion-icon :icon="addCircleOutline" class="add-icon-main"></ion-icon>
+            <ion-label>Tambah</ion-label>
+          </ion-tab-button>
+
+          <ion-tab-button tab="profile" @click="currentTab = 'profile'" :selected="currentTab === 'profile'">
             <ion-icon :icon="personOutline"></ion-icon>
             <ion-label>Profil</ion-label>
           </ion-tab-button>
@@ -208,14 +277,15 @@ import { ref, reactive, onMounted } from 'vue';
 import { 
   IonApp, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel, 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton,
-  IonFab, IonFabButton
+  IonFab, IonFabButton, IonRefresher, IonRefresherContent
 } from '@ionic/vue';
 import { 
   gridOutline, timeOutline, personOutline, logOutOutline, walletOutline,
   trendingUpOutline, trendingDownOutline, busOutline, cashOutline,
   chevronForwardOutline, addOutline, arrowBackOutline, scaleOutline,
   arrowDownCircleOutline, arrowUpCircleOutline, documentTextOutline,
-  cardOutline, moonOutline, sunnyOutline, cloudDoneOutline, cloudOfflineOutline
+  cardOutline, moonOutline, sunnyOutline, cloudDoneOutline, cloudOfflineOutline,
+  addCircleOutline
 } from 'ionicons/icons';
 import LoginView from './components/LoginView.vue';
 import OfflineForm from './components/OfflineForm.vue';
@@ -224,6 +294,7 @@ import { DatabaseService } from './services/database';
 
 const isLoggedIn = ref(false);
 const currentTab = ref('home');
+const currentFormType = ref('DO'); // 'DO' atau 'OPS'
 const recentTransactions = ref([]);
 const isDarkMode = ref(localStorage.getItem('theme') === 'dark'); // Default putih (false)
 
@@ -272,7 +343,16 @@ const formatCurrency = (val) => {
 const formatCurrencyShort = (val) => {
   if (val >= 1000000) return `Rp ${(val / 1000000).toFixed(1)}M`;
   if (val >= 1000) return `Rp ${(val / 1000).toFixed(0)}K`;
-  return formatCurrency(val);
+  return `Rp ${val}`;
+};
+
+const doRefresh = async (event) => {
+  console.log('Refreshing data...');
+  if (SyncService.isOnline) {
+    await SyncService.syncAll();
+  }
+  await loadDashboardData();
+  event.target.complete();
 };
 
 const formatTime = (isoString) => {
@@ -284,7 +364,12 @@ const formatTime = (isoString) => {
 const loadDashboardData = async () => {
   try {
     recentTransactions.value = await DatabaseService.getRecentTransactions(5);
-    // Di sini bisa ditambahkan logic untuk hitung stats dari local data jika perlu
+    
+    // Update stats dari local database
+    const localStats = await DatabaseService.getDashboardStats();
+    Object.assign(stats, localStats);
+    
+    console.log("Dashboard data updated from local DB");
   } catch (e) {
     console.error("Gagal memuat data dashboard:", e);
   }
@@ -292,6 +377,23 @@ const loadDashboardData = async () => {
 
 const handleLogout = () => {
   isLoggedIn.value = false;
+  localStorage.removeItem('token');
+  sessionStorage.removeItem('token');
+  console.log("Logged out, session cleared.");
+};
+
+const handleLoginSuccess = (authData) => {
+  const { token, remember } = authData;
+  isLoggedIn.value = true;
+  
+  if (remember) {
+    localStorage.setItem('token', token);
+  } else {
+    sessionStorage.setItem('token', token);
+  }
+  
+  loadDashboardData();
+  SyncService.syncAll();
 };
 
 const currentTime = ref(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
@@ -301,11 +403,11 @@ const updateTime = () => {
 };
 
 onMounted(async () => {
-  // Check if session exists
-  const token = localStorage.getItem('token');
+  // Check if session exists in either storage
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (token) {
     isLoggedIn.value = true;
-    console.log("Session restored from token");
+    console.log("Session restored");
   }
 
   updateTheme();
@@ -323,19 +425,6 @@ onMounted(async () => {
   setInterval(updateTime, 1000);
   setInterval(loadDashboardData, 10000);
 });
-
-const handleLoginSuccess = (data) => {
-  isLoggedIn.value = true;
-  if (data && data.token) {
-    localStorage.setItem('token', data.token);
-    console.log("Token saved to localStorage");
-  }
-  
-  // Langsung sync setelah login
-  if (SyncService.isOnline) {
-    SyncService.syncAll();
-  }
-};
 </script>
 
 <style scoped>
@@ -357,6 +446,14 @@ const handleLoginSuccess = (data) => {
 
 .main-dashboard {
   padding-bottom: 80px;
+}
+
+.custom-item ion-input, 
+.custom-item ion-textarea {
+  font-size: 20px;
+  font-weight: 800;
+  color: #01579B;
+  --placeholder-color: #cbd5e1;
 }
 
 .greeting-section {
@@ -387,6 +484,82 @@ const handleLoginSuccess = (data) => {
   overflow: hidden;
   box-shadow: 0 15px 35px rgba(1, 87, 155, 0.3);
   margin-bottom: 30px;
+}
+
+/* Quick Actions Grid */
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+}
+
+.action-card:active {
+  transform: scale(0.96);
+  background: #f8fafc;
+}
+
+.action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.primary .action-icon {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.secondary .action-icon {
+  background: #fdf2f8;
+  color: #db2777;
+}
+
+.action-text h4 {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+}
+
+.action-text p {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+/* Transaction List Icons & Colors */
+.tx-icon.rose { background: #fff1f2; color: #f43f5e; border-radius: 12px; }
+.tx-icon.blue { background: #eff6ff; color: #3b82f6; border-radius: 12px; }
+.rose-text { color: #f43f5e; font-weight: 800; }
+.blue-text { color: #3b82f6; font-weight: 800; }
+
+/* Tab Bar Adjustments */
+.add-icon-main {
+  font-size: 32px !important;
+  color: #01579B;
+  margin-bottom: 2px;
+}
+
+.center-add-tab {
+  --color-selected: #01579B;
 }
 
 .card-bg-decoration {
@@ -599,15 +772,14 @@ ion-tab-bar {
   --background: var(--card-bg);
   --border: none;
   height: 65px;
-  width: calc(100% - 40px);
-  margin: 0 20px 20px 20px;
-  border-radius: 25px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  position: absolute;
-  bottom: 0;
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+  position: relative;
   backdrop-filter: blur(10px);
-  background: rgba(var(--tab-bg-rgb), 0.8) !important;
-  border: 1px solid var(--card-border);
+  background: rgba(var(--tab-bg-rgb), 0.9) !important;
+  border-top: 1px solid var(--card-border);
 }
 
 body:not(.dark-mode) ion-tab-bar { --tab-bg-rgb: 255, 255, 255; }

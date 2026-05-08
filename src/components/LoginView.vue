@@ -96,7 +96,7 @@ import { Capacitor } from '@capacitor/core';
 
 const email = ref('superadmin@gmail.com');
 const password = ref('password');
-const rememberMe = ref(true);
+const rememberMe = ref(false);
 const loading = ref(false);
 const showPassword = ref(false);
 
@@ -139,7 +139,10 @@ const handleLogin = async () => {
         if (response.ok) {
           const data = await response.json();
           loading.value = false;
-          emit('login-success', { token: data.token });
+          emit('login-success', { 
+            token: data.token, 
+            remember: rememberMe.value 
+          });
           return;
         } else {
           const errData = await response.json();
@@ -185,7 +188,10 @@ const handleLogin = async () => {
       if (isValid) {
         setTimeout(() => {
           loading.value = false;
-          emit('login-success', { token: 'offline-' + user.id });
+          emit('login-success', { 
+            token: 'offline-' + user.id,
+            remember: rememberMe.value
+          });
         }, 800);
         return;
       } else {

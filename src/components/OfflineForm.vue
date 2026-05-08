@@ -11,10 +11,10 @@
         <!-- Nama Pelanggan -->
         <div class="ion-input-group">
           <ion-item lines="none" class="custom-item">
-            <ion-label position="stacked">Nama Pelanggan</ion-label>
+            <ion-label position="stacked">{{ props.type === 'DO' ? 'Nama Pelanggan' : 'Keterangan / Keperluan' }}</ion-label>
             <ion-input 
               v-model="form.name" 
-              placeholder="Contoh: Toko Jaya Mandiri"
+              :placeholder="props.type === 'DO' ? 'Contoh: Toko Jaya Mandiri' : 'Contoh: Beli Solar / Makan Siang'"
               mode="md"
             ></ion-input>
           </ion-item>
@@ -23,10 +23,10 @@
         <!-- Nama Barang -->
         <div class="ion-input-group">
           <ion-item lines="none" class="custom-item">
-            <ion-label position="stacked">Nama Barang</ion-label>
+            <ion-label position="stacked">{{ props.type === 'DO' ? 'Nama Barang' : 'Kategori Biaya' }}</ion-label>
             <ion-input 
               v-model="form.item" 
-              placeholder="Contoh: Kelapa Sawit (TBS)"
+              :placeholder="props.type === 'DO' ? 'Contoh: Kelapa Sawit (TBS)' : 'Contoh: Operasional Kantor'"
               mode="md"
             ></ion-input>
           </ion-item>
@@ -35,7 +35,7 @@
         <!-- Jumlah (Qty) -->
         <div class="ion-input-group">
           <ion-item lines="none" class="custom-item">
-            <ion-label position="stacked">Jumlah (Kg)</ion-label>
+            <ion-label position="stacked">{{ props.type === 'DO' ? 'Jumlah (Kg)' : 'Jumlah (Rp)' }}</ion-label>
             <ion-input 
               v-model="form.qty" 
               type="number"
@@ -102,6 +102,13 @@ import { saveOutline, cloudDoneOutline } from 'ionicons/icons';
 import { DatabaseService } from '../services/database';
 import { SyncService } from '../services/sync';
 
+const props = defineProps({
+  type: {
+    type: String,
+    default: 'DO'
+  }
+});
+
 const loading = ref(false);
 const emit = defineEmits(['submitted']);
 
@@ -137,6 +144,7 @@ const handleSubmit = async () => {
       item_name: form.item,
       qty: parseFloat(form.qty),
       note: form.note,
+      type: props.type, // 'DO' atau 'OPS'
       status: 'pending',
       created_at: new Date().toISOString()
     });
@@ -218,9 +226,9 @@ const handleSubmit = async () => {
 
 .custom-item ion-input, 
 .custom-item ion-textarea {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 22px;
+  font-weight: 800;
+  color: #01579B;
   --placeholder-color: #cbd5e1;
 }
 

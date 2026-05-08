@@ -2,7 +2,7 @@ import { reactive } from 'vue';
 import { Network } from '@capacitor/network';
 import { DatabaseService } from './database';
 
-const API_BASE_URL = 'http://localhost:8000/api'; // Disesuaikan dengan port Laravel dev
+const API_BASE_URL = 'http://192.168.1.10:8000/api'; // Menggunakan IP komputer agar bisa diakses HP fisik
 
 export const SyncService = reactive({
     isOnline: true,
