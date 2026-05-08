@@ -17,6 +17,16 @@
               <ion-title class="ion-text-uppercase font-black">Success Mandiri</ion-title>
               
               <ion-buttons slot="end">
+                <!-- Sync Status Icon -->
+                <div class="sync-status-header">
+                  <ion-icon 
+                    :icon="SyncService.isOnline ? cloudDoneOutline : cloudOfflineOutline" 
+                    :color="SyncService.isOnline ? 'success' : 'danger'"
+                    class="sync-icon-large"
+                  ></ion-icon>
+                  <div class="sync-badge" v-if="SyncService.unsyncedCount > 0">{{ SyncService.unsyncedCount }}</div>
+                </div>
+
                 <ion-button @click="toggleDarkMode">
                   <ion-icon slot="icon-only" :icon="isDarkMode ? sunnyOutline : moonOutline" color="primary"></ion-icon>
                 </ion-button>
@@ -29,18 +39,28 @@
 
           <ion-content :fullscreen="true">
             <div class="dashboard-wrapper">
-              <div class="greeting-section">
-                <p>{{ currentDate }}</p>
-                <h2>Halo, Super Admin</h2>
+              
+              <!-- Premium Profile Card -->
+              <div class="profile-card-container">
+                <div class="profile-card">
+                  <div class="profile-main">
+                    <div class="avatar-wrapper">
+                      <img src="https://ui-avatars.com/api/?name=Super+Admin&background=01579B&color=fff" alt="User">
+                      <div class="online-indicator"></div>
+                    </div>
+                    <div class="profile-info">
+                      <h2>Halo, Super Admin</h2>
+                      <p>{{ currentDate }}</p>
+                    </div>
+                  </div>
+                  <div class="profile-time">
+                    <ion-icon :icon="timeOutline"></ion-icon>
+                    <span>{{ currentTime }}</span>
+                  </div>
+                </div>
               </div>
 
               <div class="nested-content">
-                <!-- Status Sinkronisasi -->
-                <div class="sync-status-bar">
-                  <div class="sync-dot" :class="{ 'synced': SyncService.isOnline }"></div>
-                  <span>{{ SyncService.isOnline ? 'Terhubung ke Laravel' : 'Mode Offline' }}</span>
-                </div>
-
                 <div class="stats-grid-6">
                   <!-- Saldo Kas -->
                   <div class="stat-card-6 emerald">
@@ -195,7 +215,7 @@ import {
   trendingUpOutline, trendingDownOutline, busOutline, cashOutline,
   chevronForwardOutline, addOutline, arrowBackOutline, scaleOutline,
   arrowDownCircleOutline, arrowUpCircleOutline, documentTextOutline,
-  cardOutline, moonOutline, sunnyOutline
+  cardOutline, moonOutline, sunnyOutline, cloudDoneOutline, cloudOfflineOutline
 } from 'ionicons/icons';
 import LoginView from './components/LoginView.vue';
 import OfflineForm from './components/OfflineForm.vue';
@@ -274,10 +294,16 @@ const handleLogout = () => {
   isLoggedIn.value = false;
 };
 
+const currentTime = ref(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+
+const updateTime = () => {
+  currentTime.value = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};
+
 onMounted(() => {
   updateTheme();
   loadDashboardData();
-  // Refresh data setiap kali kembali ke tab home
+  setInterval(updateTime, 1000);
   setInterval(loadDashboardData, 10000);
 });
 </script>
@@ -622,58 +648,121 @@ ion-title {
   text-align: left;
 }
 
-/* Greeting Section */
-.greeting-section {
-  padding: 45px 20px 40px;
+/* Profile Card Styling */
+.profile-card-container {
+  padding: 20px;
   background: var(--bg-color);
-  position: relative;
-  z-index: 5;
 }
 
-.greeting-section h2 {
-  font-size: 26px;
+.profile-card {
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--card-border);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.profile-main {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 54px;
+  height: 54px;
+}
+
+.avatar-wrapper img {
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 2px solid var(--card-border);
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  background: #10b981;
+  border: 3px solid var(--card-bg);
+  border-radius: 50%;
+}
+
+.profile-info h2 {
+  font-size: 18px;
   font-weight: 900;
   color: var(--text-color);
   margin: 0;
-  letter-spacing: -0.8px;
-  line-height: 1.2;
+  letter-spacing: -0.5px;
 }
 
-.greeting-section p {
-  font-size: 11px;
-  font-weight: 800;
-  color: #94a3b8;
+.profile-info p {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted-text);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-top: 8px;
+  margin: 4px 0 0;
+  letter-spacing: 0.5px;
 }
 
-/* Sync Status Bar */
-.sync-status-bar {
+.profile-time {
+  background: rgba(1, 87, 155, 0.08);
+  padding: 8px 12px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 25px;
-  background: var(--bg-color);
-  padding: 10px 16px;
-  border-radius: 12px;
+  gap: 6px;
+  color: #01579B;
+}
+
+.profile-time span {
   font-size: 13px;
-  font-weight: 700;
-  color: var(--text-color);
-  border: 1px solid var(--card-border);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
-.sync-dot {
-  width: 8px;
-  height: 8px;
+.profile-time ion-icon {
+  font-size: 16px;
+}
+
+/* Header Sync Indicator */
+.sync-status-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+.sync-icon-large {
+  font-size: 24px;
+}
+
+.sync-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
   background: #f43f5e;
-  border-radius: 50%;
-  box-shadow: 0 0 10px rgba(244, 63, 94, 0.5);
-}
-
-.sync-dot.synced {
-  background: #10b981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--bg-color);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 /* Transaction List */
@@ -782,30 +871,33 @@ ion-title {
 .stat-card-6.amber { border-left: 3px solid #f59e0b; }
 .stat-card-6.rose { border-left: 3px solid #f43f5e; }
 
-.stat-header span {
+.stat-label {
   font-size: 11px;
-  font-weight: 600;
-  color: #a1a1aa;
+  font-weight: 700;
+  color: var(--muted-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .stat-value {
-  font-size: 20px;
-  font-weight: 800;
-  color: white;
+  font-size: 21px;
+  font-weight: 900;
+  color: var(--text-color);
   margin: 4px 0;
+  letter-spacing: -0.5px;
 }
 
 .stat-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
-.stat-footer span {
+.footer-text {
   font-size: 10px;
-  font-weight: 500;
-  color: #71717a;
+  font-weight: 600;
+  color: var(--muted-text);
 }
 
 .footer-icon {
