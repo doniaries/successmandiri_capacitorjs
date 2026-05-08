@@ -107,46 +107,58 @@ export const SyncService = reactive({
     // Fungsi untuk menyinkronkan daftar penjual
     async syncSellers() {
         if (!this.isOnline) return;
+        const token = localStorage.getItem('token');
+        if (!token) return false;
 
         try {
-            console.log('Menyinkronkan data penjual untuk mode offline...');
+            console.log('[SYNC] Menarik data penjual terbaru...');
             const response = await fetch(`${API_BASE_URL}/sellers/sync`, {
                 headers: {
                     'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (response.ok) {
                 const sellers = await response.json();
-                await DatabaseService.saveSellers(sellers);
-                console.log(`${sellers.length} penjual berhasil diimpor untuk mode offline.`);
+                console.log(`[SYNC] Berhasil menarik ${sellers.length} penjual`);
+                if (sellers.length > 0) {
+                    await DatabaseService.saveSellers(sellers);
+                }
+                return true;
             }
         } catch (error) {
-            console.error('Gagal sinkronisasi penjual:', error);
+            console.error('[SYNC] Gagal sinkronisasi penjual:', error);
         }
     },
 
     // Fungsi untuk menyinkronkan daftar supir
     async syncDrivers() {
         if (!this.isOnline) return;
+        const token = localStorage.getItem('token');
+        if (!token) return false;
 
         try {
-            console.log('Menyinkronkan data supir untuk mode offline...');
+            console.log('[SYNC] Menarik data supir terbaru...');
             const response = await fetch(`${API_BASE_URL}/drivers/sync`, {
                 headers: {
                     'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (response.ok) {
                 const drivers = await response.json();
-                await DatabaseService.saveDrivers(drivers);
-                console.log(`${drivers.length} supir berhasil diimpor untuk mode offline.`);
+                console.log(`[SYNC] Berhasil menarik ${drivers.length} supir`);
+                if (drivers.length > 0) {
+                    await DatabaseService.saveDrivers(drivers);
+                }
+                return true;
             }
         } catch (error) {
-            console.error('Gagal sinkronisasi supir:', error);
+            console.error('[SYNC] Gagal sinkronisasi supir:', error);
         }
     },
 

@@ -62,19 +62,23 @@ export const DatabaseService = {
             );
 
             CREATE TABLE IF NOT EXISTS penjuals (
-                id INTEGER PRIMARY KEY,
+                id TEXT PRIMARY KEY,
                 nama TEXT NOT NULL,
                 alamat TEXT,
                 telepon TEXT,
+                hutang REAL DEFAULT 0,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS supirs (
-                id INTEGER PRIMARY KEY,
+                id TEXT PRIMARY KEY,
                 nama TEXT NOT NULL,
                 alamat TEXT,
                 telepon TEXT,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE INDEX IF NOT EXISTS idx_penjual_nama ON penjuals (nama);
+            CREATE INDEX IF NOT EXISTS idx_supir_nama ON supirs (nama);
         `;
         await db.execute(query);
     },
@@ -83,18 +87,39 @@ export const DatabaseService = {
         if (!sellers || !sellers.length) return;
         for (const s of sellers) {
             const query = `
-                INSERT OR REPLACE INTO penjuals (id, nama, alamat, telepon, updated_at)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT OR REPLACE INTO penjuals (id, nama, alamat, telepon, hutang, updated_at)
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             `;
-            await db.run(query, [s.id, s.nama, s.alamat, s.telepon]);
+            await db.run(query, [s.id, s.nama, s.alamat, s.telepon, s.hutang || 0]);
         }
+    },
+
+    async createSeller(data) {
+        const id = `LOC-S-${Date.now()}`;
+        const query = `
+            INSERT INTO penjuals (id, nama, alamat, telepon, hutang, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `;
+        await db.run(query, [id, data.nama, data.alamat || '', data.telepon || '', 0]);
+        
+        // Add to sync queue
+        await this.saveOffline('seller', id, { ...data, id });
+        return id;
     },
 
     async getSellers() {
         await this.init();
-        const query = `SELECT * FROM penjuals ORDER BY nama ASC`;
-        const result = await db.query(query);
-        return result.values || [];
+        const query = `SELECT * FROM penjuals ORDER BY nama ASC LIMIT 100`;
+        const res = await db.query(query);
+        return res.values || [];
+    },
+
+    async searchSellers(term) {
+        if (!term) return this.getSellers();
+        await this.init();
+        const query = `SELECT * FROM penjuals WHERE LOWER(nama) LIKE LOWER(?) ORDER BY nama ASC LIMIT 10`;
+        const res = await db.query(query, [`%${term}%`]);
+        return res.values || [];
     },
 
     async saveDrivers(drivers) {
@@ -108,11 +133,32 @@ export const DatabaseService = {
         }
     },
 
+    async createDriver(data) {
+        const id = `LOC-D-${Date.now()}`;
+        const query = `
+            INSERT INTO supirs (id, nama, alamat, telepon, updated_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `;
+        await db.run(query, [id, data.nama, data.alamat || '', data.telepon || '']);
+        
+        // Add to sync queue
+        await this.saveOffline('driver', id, { ...data, id });
+        return id;
+    },
+
     async getDrivers() {
         await this.init();
-        const query = `SELECT * FROM supirs ORDER BY nama ASC`;
-        const result = await db.query(query);
-        return result.values || [];
+        const query = `SELECT * FROM supirs ORDER BY nama ASC LIMIT 100`;
+        const res = await db.query(query);
+        return res.values || [];
+    },
+
+    async searchDrivers(term) {
+        if (!term) return this.getDrivers();
+        await this.init();
+        const query = `SELECT * FROM supirs WHERE LOWER(nama) LIKE LOWER(?) ORDER BY nama ASC LIMIT 10`;
+        const res = await db.query(query, [`%${term}%`]);
+        return res.values || [];
     },
 
     async seedData() {
