@@ -58,6 +58,11 @@ export const DatabaseService = {
         await db.run(query, [id, type, JSON.stringify(content)]);
     },
 
+    async saveTransaction(data) {
+        const id = `TX-${Date.now()}`;
+        await this.saveOffline('transaction', id, data);
+    },
+
     async getUnsyncedData() {
         const query = `SELECT * FROM offline_data WHERE is_synced = 0`;
         const result = await db.query(query);

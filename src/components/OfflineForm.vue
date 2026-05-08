@@ -95,7 +95,8 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { 
-  IonItem, IonLabel, IonInput, IonTextarea, IonButton, IonIcon 
+  IonItem, IonLabel, IonInput, IonTextarea, IonButton, IonIcon,
+  toastController
 } from '@ionic/vue';
 import { saveOutline, cloudDoneOutline } from 'ionicons/icons';
 import { DatabaseService } from '../services/database';
@@ -110,8 +111,23 @@ const form = reactive({
   note: ''
 });
 
+const showToast = async (message, color = 'success') => {
+  const toast = await toastController.create({
+    message: message,
+    duration: 2000,
+    color: color,
+    position: 'top',
+    mode: 'ios',
+    cssClass: 'custom-toast'
+  });
+  await toast.present();
+};
+
 const handleSubmit = async () => {
-  if (!form.name || !form.qty) return;
+  if (!form.name || !form.qty) {
+    await showToast('Mohon isi nama dan jumlah!', 'warning');
+    return;
+  }
   
   loading.value = true;
   try {
@@ -124,15 +140,20 @@ const handleSubmit = async () => {
       created_at: new Date().toISOString()
     });
     
+    await showToast('Data disimpan secara lokal!');
+
     // Reset form
     form.name = '';
     form.item = '';
     form.qty = '';
     form.note = '';
     
-    emit('submitted');
+    setTimeout(() => {
+      emit('submitted');
+    }, 500);
   } catch (error) {
     console.error('Gagal menyimpan:', error);
+    await showToast('Gagal menyimpan data!', 'danger');
   } finally {
     loading.value = false;
   }
