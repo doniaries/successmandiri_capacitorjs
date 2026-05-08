@@ -252,7 +252,15 @@
 
         <!-- Add Transaction Page -->
         <ion-page v-if="currentTab === 'add'">
-          <ion-content class="ion-padding no-header-form">
+          <ion-header class="ion-no-border sticky-compact-header">
+            <ion-toolbar>
+              <div class="compact-header-content">
+                <span class="company-label">SUCCESS MANDIRI</span>
+                <span class="page-label">{{ currentFormType === 'DO' ? 'TAMBAH DO' : 'TAMBAH OPS' }}</span>
+              </div>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
             <div class="nested-content">
               <OfflineForm 
                 :type="currentFormType"
@@ -581,6 +589,44 @@ onMounted(async () => {
 
 .center-add-tab {
   --color-selected: #01579B;
+}
+
+/* Sticky Compact Header Styles */
+.sticky-compact-header {
+  --background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dark-mode .sticky-compact-header {
+  --background: #000000;
+  border-color: #1e293b;
+}
+
+.compact-header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.company-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: #3b82f6;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.page-label {
+  font-size: 14px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-top: -2px;
+}
+
+.dark-mode .page-label {
+  color: #ffffff;
 }
 
 .card-bg-decoration {
