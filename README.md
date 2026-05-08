@@ -1,0 +1,1 @@
+# successmandiri_capacitorjs
